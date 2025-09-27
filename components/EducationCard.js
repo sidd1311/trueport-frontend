@@ -1,6 +1,6 @@
 import Link from 'next/link';
 
-const EducationCard = ({ education, showActions = false, onEdit, onDelete, onRequestVerification }) => {
+const EducationCard = ({ education, showActions = false, onEdit, onDelete, onRequestVerification, showToast }) => {
   const {
     _id,
     courseType,

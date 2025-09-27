@@ -1,6 +1,6 @@
 import Link from 'next/link';
 
-const GitHubProjectCard = ({ project, onEdit, onDelete, onRequestVerification }) => {
+const GitHubProjectCard = ({ project, onEdit, onDelete, onRequestVerification, showToast }) => {
   const {
     _id,
     repositoryUrl,

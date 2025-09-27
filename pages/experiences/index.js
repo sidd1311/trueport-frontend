@@ -4,6 +4,7 @@ import Link from 'next/link';
 import ProtectedRoute from '../../components/ProtectedRoute';
 import ExperienceCard from '../../components/ExperienceCard';
 import Pagination from '../../components/Pagination';
+import VerifierSelectionModal from '../../components/VerifierSelectionModal';
 import api from '../../utils/api';
 
 export default function Experiences({ showToast }) {
@@ -17,6 +18,7 @@ export default function Experiences({ showToast }) {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
+  const [verifierModal, setVerifierModal] = useState({ isOpen: false, experienceId: null });
 
   const itemsPerPage = 10;
 
@@ -61,26 +63,17 @@ export default function Experiences({ showToast }) {
     setCurrentPage(1);
   };
 
-  const handleRequestVerification = async (experienceId) => {
-    const email = prompt('Enter verifier email address:');
-    if (!email) return;
+  const handleRequestVerification = (experienceId) => {
+    setVerifierModal({ isOpen: true, experienceId });
+  };
 
-    try {
-      const response = await api.post(`/verify/request/${experienceId}`, { email });
-      showToast('Verification request sent successfully!', 'success');
-      
-      // Show verification link if email service is not configured
-      if (response.data.link) {
-        console.log('Verification link:', response.data.link);
-        showToast('Verification link logged to console', 'success');
-      }
-      
-      // Refresh experiences to update status
-      fetchExperiences();
-    } catch (error) {
-      console.error('Failed to request verification:', error);
-      showToast(error.response?.data?.message || 'Failed to send verification request', 'error');
-    }
+  const handleVerifierModalClose = () => {
+    setVerifierModal({ isOpen: false, experienceId: null });
+  };
+
+  const handleVerifierSelected = () => {
+    // Refresh experiences to update status
+    fetchExperiences();
   };
 
   const handleEdit = (experienceId) => {
@@ -189,6 +182,7 @@ export default function Experiences({ showToast }) {
                     onEdit={() => handleEdit(experience._id)}
                     onDelete={() => handleDelete(experience._id)}
                     onRequestVerification={() => handleRequestVerification(experience._id)}
+                    showToast={showToast}
                   />
                 ))}
               </div>
@@ -221,6 +215,16 @@ export default function Experiences({ showToast }) {
             </div>
           )}
         </div>
+
+        {/* Verifier Selection Modal */}
+        <VerifierSelectionModal
+          isOpen={verifierModal.isOpen}
+          onClose={handleVerifierModalClose}
+          onSelectVerifier={handleVerifierSelected}
+          itemType="EXPERIENCE"
+          itemId={verifierModal.experienceId}
+          showToast={showToast}
+        />
       </div>
     </ProtectedRoute>
   );

@@ -1,6 +1,6 @@
 import Link from 'next/link';
 
-const ExperienceCard = ({ experience, showActions = false, onEdit, onDelete, onRequestVerification }) => {
+const ExperienceCard = ({ experience, showActions = false, onEdit, onDelete, onRequestVerification, showToast }) => {
   const { 
     _id, 
     title, 

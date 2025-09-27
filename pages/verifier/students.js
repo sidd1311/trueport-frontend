@@ -158,19 +158,13 @@ export default function VerifierStudents({ showToast }) {
                       </div>
 
                       {/* Action Buttons */}
-                      <div className="flex space-x-2">
-                        <Link
-                          href={`/verifier/student/${student._id}`}
-                          className="flex-1 btn-primary text-center"
-                        >
-                          View Portfolio
-                        </Link>
+                      <div>
                         <Link
                           href={`/portfolio/${student._id}`}
                           target="_blank"
-                          className="flex-1 btn-secondary text-center"
+                          className="w-full btn-primary text-center inline-block"
                         >
-                          Public View
+                          View Portfolio
                         </Link>
                       </div>
 

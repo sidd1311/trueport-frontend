@@ -4,6 +4,7 @@ import Link from 'next/link';
 import ProtectedRoute from '../../components/ProtectedRoute';
 import EducationCard from '../../components/EducationCard';
 import Pagination from '../../components/Pagination';
+import VerifierSelectionModal from '../../components/VerifierSelectionModal';
 import api from '../../utils/api';
 
 export default function Education({ showToast }) {
@@ -17,6 +18,7 @@ export default function Education({ showToast }) {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
+  const [verifierModal, setVerifierModal] = useState({ isOpen: false, educationId: null });
 
   const itemsPerPage = 10;
 
@@ -56,26 +58,17 @@ export default function Education({ showToast }) {
     setCurrentPage(1);
   };
 
-  const handleRequestVerification = async (educationId) => {
-    const email = prompt('Enter verifier email address:');
-    if (!email) return;
+  const handleRequestVerification = (educationId) => {
+    setVerifierModal({ isOpen: true, educationId });
+  };
 
-    try {
-      const response = await api.post(`/verify/request/EDUCATION/${educationId}`, { 
-        verifierEmail: email 
-      });
-      showToast('Verification request sent successfully!', 'success');
-      
-      if (response.data.link) {
-        console.log('Verification link:', response.data.link);
-        showToast('Verification link logged to console', 'success');
-      }
-      
-      fetchEducation();
-    } catch (error) {
-      console.error('Failed to request verification:', error);
-      showToast(error.response?.data?.message || 'Failed to send verification request', 'error');
-    }
+  const handleVerifierModalClose = () => {
+    setVerifierModal({ isOpen: false, educationId: null });
+  };
+
+  const handleVerifierSelected = () => {
+    // Refresh education to update status
+    fetchEducation();
   };
 
   const handleEdit = (educationId) => {
@@ -190,6 +183,7 @@ export default function Education({ showToast }) {
                     onEdit={() => handleEdit(edu._id)}
                     onDelete={() => handleDelete(edu._id)}
                     onRequestVerification={() => handleRequestVerification(edu._id)}
+                    showToast={showToast}
                   />
                 ))}
               </div>
@@ -223,6 +217,16 @@ export default function Education({ showToast }) {
             </div>
           )}
         </div>
+
+        {/* Verifier Selection Modal */}
+        <VerifierSelectionModal
+          isOpen={verifierModal.isOpen}
+          onClose={handleVerifierModalClose}
+          onSelectVerifier={handleVerifierSelected}
+          itemType="EDUCATION"
+          itemId={verifierModal.educationId}
+          showToast={showToast}
+        />
       </div>
     </ProtectedRoute>
   );

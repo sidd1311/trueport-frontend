@@ -5,6 +5,7 @@ import Link from 'next/link';
 import ProtectedRoute from '../../components/ProtectedRoute';
 import GitHubProjectCard from '../../components/GitHubProjectCard';
 import Pagination from '../../components/Pagination';
+import VerifierSelectionModal from '../../components/VerifierSelectionModal';
 import api from '../../utils/api';
 
 export default function GitHubProjects({ showToast }) {
@@ -21,6 +22,7 @@ export default function GitHubProjects({ showToast }) {
     pending: 0,
     rejected: 0
   });
+  const [verifierModal, setVerifierModal] = useState({ isOpen: false, projectId: null });
 
   useEffect(() => {
     fetchProjects();
@@ -97,15 +99,17 @@ export default function GitHubProjects({ showToast }) {
     }
   };
 
-  const handleRequestVerification = async (projectId) => {
-    try {
-      await api.post(`/github-projects/${projectId}/request-verification`);
-      showToast('Verification requested successfully', 'success');
-      fetchProjects();
-    } catch (error) {
-      console.error('Failed to request verification:', error);
-      showToast(error.response?.data?.message || 'Failed to request verification', 'error');
-    }
+  const handleRequestVerification = (projectId) => {
+    setVerifierModal({ isOpen: true, projectId });
+  };
+
+  const handleVerifierModalClose = () => {
+    setVerifierModal({ isOpen: false, projectId: null });
+  };
+
+  const handleVerifierSelected = () => {
+    // Refresh projects to update status
+    fetchProjects();
   };
 
   const handleSearch = (e) => {
@@ -264,6 +268,7 @@ export default function GitHubProjects({ showToast }) {
                     onEdit={() => router.push(`/projects/edit/${project._id}`)}
                     onDelete={() => handleDelete(project._id)}
                     onRequestVerification={() => handleRequestVerification(project._id)}
+                    showToast={showToast}
                   />
                 ))}
               </div>
@@ -278,6 +283,16 @@ export default function GitHubProjects({ showToast }) {
             </>
           )}
         </div>
+
+        {/* Verifier Selection Modal */}
+        <VerifierSelectionModal
+          isOpen={verifierModal.isOpen}
+          onClose={handleVerifierModalClose}
+          onSelectVerifier={handleVerifierSelected}
+          itemType="GITHUB_PROJECT"
+          itemId={verifierModal.projectId}
+          showToast={showToast}
+        />
       </div>
     </ProtectedRoute>
   );

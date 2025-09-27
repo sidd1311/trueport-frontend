@@ -223,7 +223,8 @@ export default function VerifierDashboard({ showToast }) {
                           <p className="text-sm text-gray-600">{student.email}</p>
                         </div>
                         <Link
-                          href={`/verifier/student/${student._id}`}
+                          href={`/portfolio/${student._id}`}
+                          target="_blank"
                           className="px-3 py-1 bg-primary-600 text-white text-xs rounded hover:bg-primary-700"
                         >
                           View Portfolio
