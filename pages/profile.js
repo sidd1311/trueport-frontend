@@ -15,17 +15,21 @@ export default function Profile({ showToast }) {
     institute: '',
     githubUsername: '',
     bio: '',
+    role: 'STUDENT',
   });
   const [education, setEducation] = useState([]);
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('profile');
+  const [institutionStatus, setInstitutionStatus] = useState('NONE'); // NONE, PENDING, APPROVED, REJECTED
+  const [institutionRequest, setInstitutionRequest] = useState(null);
 
   useEffect(() => {
     fetchUser();
     fetchEducation();
     fetchProjects();
+    fetchInstitutionStatus();
   }, []);
 
   const fetchUser = async () => {
@@ -71,6 +75,18 @@ export default function Profile({ showToast }) {
     }
   };
 
+  const fetchInstitutionStatus = async () => {
+    try {
+      const response = await api.get('/associations/my-requests');
+      setInstitutionStatus(response.data.status || 'NONE');
+      setInstitutionRequest(response.data.request || null);
+    } catch (error) {
+      console.error('Failed to fetch institution status:', error);
+      // If endpoint doesn't exist yet, assume NONE status
+      setInstitutionStatus('NONE');
+    }
+  };
+
   const handleChange = (e) => {
     setUser({
       ...user,
@@ -90,6 +106,35 @@ export default function Profile({ showToast }) {
     } catch (error) {
       console.error('Failed to update profile:', error);
       showToast(error.response?.data?.message || 'Failed to update profile', 'error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleInstitutionRequest = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+
+    try {
+      if (user.role === 'STUDENT') {
+        // For students, submit a request for approval
+        const response = await api.post('/associations/request', {
+          institute: user.institute,
+          requestedRole: user.role
+        });
+        setInstitutionStatus('PENDING');
+        setInstitutionRequest(response.data.request);
+        showToast('Institution association request submitted! Waiting for verifier approval.', 'success');
+      } else {
+        // For verifiers, update directly (they can self-approve)
+        const response = await api.put('/users/me', user);
+        setUser(response.data.user);
+        setInstitutionStatus('APPROVED');
+        showToast('Institution association updated successfully!', 'success');
+      }
+    } catch (error) {
+      console.error('Failed to request institution association:', error);
+      showToast(error.response?.data?.message || 'Failed to submit request', 'error');
     } finally {
       setSaving(false);
     }
@@ -180,6 +225,16 @@ export default function Profile({ showToast }) {
                 Personal Info
               </button>
               <button
+                onClick={() => setActiveTab('institution')}
+                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'institution'
+                    ? 'border-primary-600 text-primary-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                Institution
+              </button>
+              <button
                 onClick={() => setActiveTab('education')}
                 className={`py-2 px-1 border-b-2 font-medium text-sm ${
                   activeTab === 'education'
@@ -238,24 +293,7 @@ export default function Profile({ showToast }) {
                     />
                   </div>
 
-                  <div>
-                    <label htmlFor="institute" className="block text-sm font-medium text-gray-700">
-                      Institute/Organization
-                    </label>
-                    <input
-                      type="text"
-                      id="institute"
-                      name="institute"
-                      required
-                      className="form-input mt-1"
-                      placeholder="e.g., Harvard University, MIT, Google Inc."
-                      value={user.institute || ''}
-                      onChange={handleChange}
-                    />
-                    <p className="mt-2 text-sm text-gray-500">
-                      Your institution helps connect you with verifiers from the same organization
-                    </p>
-                  </div>
+
 
                   <div>
                     <label htmlFor="githubUsername" className="block text-sm font-medium text-gray-700">
@@ -343,6 +381,283 @@ export default function Profile({ showToast }) {
                 </div>
               </div>
             </>
+          )}
+
+          {/* Institution Association Tab */}
+          {activeTab === 'institution' && (
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+              <div className="p-6">
+                <div className="mb-6">
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">Institution Association</h3>
+                  <p className="text-sm text-gray-600">
+                    Associate yourself with an institution and set your role to connect with verifiers and showcase your credentials.
+                  </p>
+                </div>
+
+                {/* Current Association Status */}
+                {institutionStatus !== 'NONE' && (
+                  <div className="mb-6">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-sm font-medium text-gray-900">Current Association Status</h4>
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        institutionStatus === 'APPROVED' ? 'bg-green-100 text-green-800' :
+                        institutionStatus === 'PENDING' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-red-100 text-red-800'
+                      }`}>
+                        {institutionStatus === 'APPROVED' ? 'Approved' :
+                         institutionStatus === 'PENDING' ? 'Pending Approval' :
+                         'Rejected'}
+                      </span>
+                    </div>
+                    {institutionRequest && (
+                      <div className="mt-3 p-4 bg-gray-50 rounded-md">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <p className="text-sm text-gray-700">
+                              <span className="font-medium">Institution:</span> {institutionRequest.institute}
+                            </p>
+                            <p className="text-sm text-gray-700">
+                              <span className="font-medium">Role:</span> {institutionRequest.role}
+                            </p>
+                            <p className="text-sm text-gray-500 mt-1">
+                              Requested on: {new Date(institutionRequest.createdAt).toLocaleDateString()}
+                            </p>
+                          </div>
+                        </div>
+                        {institutionStatus === 'PENDING' && (
+                          <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                            <p className="text-sm text-yellow-800">
+                              Your request is pending approval from a verifier at your institution. You'll be notified once it's reviewed.
+                            </p>
+                          </div>
+                        )}
+                        {institutionStatus === 'REJECTED' && institutionRequest.rejectionReason && (
+                          <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-md">
+                            <p className="text-sm text-red-800">
+                              <span className="font-medium">Rejection Reason:</span> {institutionRequest.rejectionReason}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+                
+                {/* Association Form */}
+                {(institutionStatus === 'NONE' || institutionStatus === 'REJECTED') && (
+                  <form onSubmit={handleInstitutionRequest} className="space-y-6">
+                    <div>
+                      <label htmlFor="role" className="block text-sm font-medium text-gray-700">
+                        Your Role
+                      </label>
+                      <select
+                        id="role"
+                        name="role"
+                        className="form-input mt-1"
+                        value={user.role || 'STUDENT'}
+                        onChange={handleChange}
+                        disabled={institutionStatus === 'PENDING'}
+                      >
+                        <option value="STUDENT">Student</option>
+                        <option value="VERIFIER">Verifier/Faculty</option>
+                      </select>
+                      <p className="mt-2 text-sm text-gray-500">
+                        {user.role === 'STUDENT' 
+                          ? 'Students need approval from a verifier at their institution to complete association.'
+                          : 'Verifiers can directly associate with their institution without approval.'
+                        }
+                      </p>
+                    </div>
+
+                    <div>
+                      <label htmlFor="institute" className="block text-sm font-medium text-gray-700">
+                        Institution/Organization
+                      </label>
+                      <input
+                        type="text"
+                        id="institute"
+                        name="institute"
+                        className="form-input mt-1"
+                        placeholder="e.g., Harvard University, MIT, Google Inc."
+                        value={user.institute || ''}
+                        onChange={handleChange}
+                        disabled={institutionStatus === 'PENDING'}
+                        required
+                      />
+                      <p className="mt-2 text-sm text-gray-500">
+                        {user.role === 'STUDENT' 
+                          ? 'Enter the exact name of your institution. A verifier from this institution will need to approve your request.'
+                          : 'Your institution helps connect you with students from the same organization.'
+                        }
+                      </p>
+                    </div>
+
+                    {user.role === 'STUDENT' && (
+                      <div className="bg-amber-50 border border-amber-200 rounded-md p-4">
+                        <div className="flex">
+                          <div className="flex-shrink-0">
+                            <svg className="h-5 w-5 text-amber-400" viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                            </svg>
+                          </div>
+                          <div className="ml-3">
+                            <h3 className="text-sm font-medium text-amber-800">
+                              Approval Required
+                            </h3>
+                            <div className="mt-2 text-sm text-amber-700">
+                              <p>As a student, your institution association request will be sent to verifiers at your institution for approval. Make sure:</p>
+                              <ul className="list-disc pl-5 mt-2 space-y-1">
+                                <li>You enter the correct and complete institution name</li>
+                                <li>There are verifiers from your institution registered on the platform</li>
+                                <li>Your profile information is complete and accurate</li>
+                              </ul>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {user.role === 'VERIFIER' && (
+                      <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
+                        <div className="flex">
+                          <div className="flex-shrink-0">
+                            <svg className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                            </svg>
+                          </div>
+                          <div className="ml-3">
+                            <h3 className="text-sm font-medium text-blue-800">
+                              Verifier Privileges
+                            </h3>
+                            <div className="mt-2 text-sm text-blue-700">
+                              <p>As a verifier, you can:</p>
+                              <ul className="list-disc pl-5 mt-2 space-y-1">
+                                <li>Directly associate with your institution</li>
+                                <li>Approve student association requests from your institution</li>
+                                <li>Verify student credentials and achievements</li>
+                                <li>Access the verifier dashboard to manage requests</li>
+                              </ul>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          fetchUser();
+                          fetchInstitutionStatus();
+                        }}
+                        className="btn-secondary"
+                        disabled={saving}
+                      >
+                        Refresh
+                      </button>
+                      <button
+                        type="submit"
+                        className="btn-primary"
+                        disabled={saving || !user.institute || institutionStatus === 'PENDING'}
+                      >
+                        {saving ? 'Submitting...' : 
+                         user.role === 'STUDENT' ? 'Submit Request' : 'Save Association'}
+                      </button>
+                    </div>
+                  </form>
+                )}
+
+                {/* Approved Association Info */}
+                {institutionStatus === 'APPROVED' && (
+                  <div className="space-y-6">
+                    <div className="bg-green-50 border border-green-200 rounded-md p-4">
+                      <div className="flex">
+                        <div className="flex-shrink-0">
+                          <svg className="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                        <div className="ml-3">
+                          <h3 className="text-sm font-medium text-green-800">
+                            Institution Association Approved
+                          </h3>
+                          <div className="mt-2 text-sm text-green-700">
+                            <p>You are now associated with <span className="font-medium">{user.institute}</span> as a {user.role.toLowerCase()}.</p>
+                            {user.role === 'STUDENT' && (
+                              <p className="mt-1">You can now request verifications from faculty at your institution and showcase your verified credentials.</p>
+                            )}
+                            {user.role === 'VERIFIER' && (
+                              <p className="mt-1">You can now approve student requests and verify credentials from students at your institution.</p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {user.role === 'VERIFIER' && (
+                      <div className="text-center">
+                        <Link href="/verifier/requests" className="btn-primary">
+                          Go to Verifier Dashboard
+                        </Link>
+                      </div>
+                    )}
+
+                    <form onSubmit={handleSubmit} className="space-y-6">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                          Update Profile Information
+                        </label>
+                        <p className="text-sm text-gray-500 mb-4">
+                          You can still update your profile information while maintaining your institution association.
+                        </p>
+                      </div>
+
+                      <div>
+                        <label htmlFor="institute-display" className="block text-sm font-medium text-gray-700">
+                          Current Institution
+                        </label>
+                        <input
+                          type="text"
+                          id="institute-display"
+                          className="form-input mt-1 bg-gray-50"
+                          value={user.institute || ''}
+                          disabled
+                        />
+                        <p className="mt-2 text-sm text-gray-500">
+                          To change your institution, you'll need to submit a new association request.
+                        </p>
+                      </div>
+
+                      <div>
+                        <label htmlFor="role-display" className="block text-sm font-medium text-gray-700">
+                          Current Role
+                        </label>
+                        <input
+                          type="text"
+                          id="role-display"
+                          className="form-input mt-1 bg-gray-50"
+                          value={user.role || ''}
+                          disabled
+                        />
+                      </div>
+
+                      <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setInstitutionStatus('NONE');
+                            setInstitutionRequest(null);
+                          }}
+                          className="btn-secondary text-red-600 border-red-300 hover:bg-red-50"
+                        >
+                          Request New Association
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                )}
+              </div>
+            </div>
           )}
 
           {/* Education Tab */}
