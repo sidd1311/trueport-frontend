@@ -1,18 +1,16 @@
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/router';
 import Head from 'next/head';
 import Link from 'next/link';
 import ProtectedRoute from '../../components/ProtectedRoute';
 import api from '../../utils/api';
 
 export default function VerifierDashboard({ showToast }) {
-  const router = useRouter();
   const [user, setUser] = useState(null);
   const [stats, setStats] = useState({
     pendingVerifications: 0,
     studentsInInstitute: 0,
     completedVerifications: 0,
-    totalRequests: 0
+    totalRequests: 0,
   });
   const [pendingRequests, setPendingRequests] = useState([]);
   const [students, setStudents] = useState([]);
@@ -20,23 +18,25 @@ export default function VerifierDashboard({ showToast }) {
 
   useEffect(() => {
     const userData = JSON.parse(localStorage.getItem('user') || '{}');
-    if (userData.role !== 'VERIFIER') {
-      router.push('/dashboard');
+    if (!userData || userData.role !== 'VERIFIER') {
+      window.location.href = '/dashboard';
       return;
     }
     setUser(userData);
     fetchVerifierData();
-  }, [router]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const fetchVerifierData = async () => {
     try {
+      setLoading(true);
       const [statsRes, requestsRes, studentsRes] = await Promise.all([
         api.get('/verifier/stats').catch(() => ({ data: stats })),
         api.get('/verifier/pending-requests').catch(() => ({ data: { requests: [] } })),
-        api.get('/verifier/institute-students').catch(() => ({ data: { students: [] } }))
+        api.get('/verifier/institute-students').catch(() => ({ data: { students: [] } })),
       ]);
 
-      setStats(statsRes.data);
+      setStats(statsRes.data || stats);
       setPendingRequests(requestsRes.data.requests || []);
       setStudents(studentsRes.data.students || []);
     } catch (error) {
@@ -50,34 +50,81 @@ export default function VerifierDashboard({ showToast }) {
   const handleApproveVerification = async (requestId) => {
     try {
       await api.post(`/verifier/approve/${requestId}`);
-      showToast?.('Verification approved successfully', 'success');
+      showToast?.('Verification approved', 'success');
       fetchVerifierData();
     } catch (error) {
-      console.error('Failed to approve verification:', error);
-      showToast?.('Failed to approve verification', 'error');
+      console.error('Approve error', error);
+      showToast?.('Failed to approve', 'error');
     }
   };
 
-  const handleRejectVerification = async (requestId, reason) => {
+  const handleRejectVerification = async (requestId) => {
+    const reason = prompt('Rejection reason (optional):');
     try {
-      await api.post(`/verifier/reject/${requestId}`, { reason });
+      await api.post(`/verifier/reject/${requestId}`, { reason: reason || '' });
       showToast?.('Verification rejected', 'success');
       fetchVerifierData();
     } catch (error) {
-      console.error('Failed to reject verification:', error);
-      showToast?.('Failed to reject verification', 'error');
+      console.error('Reject error', error);
+      showToast?.('Failed to reject', 'error');
     }
   };
 
-  if (loading) {
-    return (
-      <ProtectedRoute>
-        <div className="min-h-screen flex items-center justify-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-600"></div>
+  // small presentational components
+  const StatCard = ({ title, value, children, accent = 'bg-indigo-50', color = 'text-indigo-600' }) => (
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 flex items-center gap-4">
+      <div className={`p-3 rounded-lg ${accent} shrink-0`}>
+        <div className={`w-6 h-6 ${color}`}>{children}</div>
+      </div>
+      <div>
+        <div className="text-2xl font-semibold text-gray-900">{value}</div>
+        <div className="text-sm text-gray-500">{title}</div>
+      </div>
+    </div>
+  );
+
+  const RequestItem = ({ r }) => (
+    <div className="flex items-center justify-between gap-4 p-3 bg-white border border-gray-100 rounded-lg">
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center text-sm font-medium text-gray-700">{(r.studentName || 'S').charAt(0)}</div>
+          <div className="truncate">
+            <div className="font-medium text-gray-900 truncate">{r.studentName}</div>
+            <div className="text-xs text-gray-500 truncate">{r.type} • {r.title}</div>
+          </div>
         </div>
-      </ProtectedRoute>
-    );
-  }
+      </div>
+      <div className="flex items-center gap-2">
+        <button
+          onClick={() => handleApproveVerification(r._id)}
+          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-emerald-600 text-white text-sm hover:bg-emerald-700">
+          <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          </svg>
+          Approve
+        </button>
+        <button
+          onClick={() => handleRejectVerification(r._id)}
+          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-red-600 text-white text-sm hover:bg-red-700">
+          <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+          Reject
+        </button>
+      </div>
+    </div>
+  );
+
+  if (loading) return (
+    <ProtectedRoute>
+      <div className="min-h-screen flex items-center justify-center">
+        <svg className="animate-spin w-16 h-16 text-primary-600" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="10" strokeWidth="4" stroke="currentColor" strokeOpacity="0.25" fill="none" />
+          <path d="M22 12a10 10 0 00-10-10" strokeWidth="4" stroke="currentColor" strokeLinecap="round" fill="none" />
+        </svg>
+      </div>
+    </ProtectedRoute>
+  );
 
   return (
     <ProtectedRoute>
@@ -85,206 +132,128 @@ export default function VerifierDashboard({ showToast }) {
         <title>Verifier Dashboard - TruePortMe</title>
       </Head>
 
-      <div className="min-h-screen bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {/* Header */}
-          <div className="mb-8">
-            <h1 className="text-2xl font-bold text-gray-900">
-              Welcome, {user?.name}!
-            </h1>
-            <p className="text-gray-600">
-              Verifier Dashboard for {user?.institute}
-            </p>
-          </div>
-
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center">
-                <div className="p-2 bg-yellow-100 rounded-lg">
-                  <svg className="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <div className="ml-4">
-                  <p className="text-2xl font-bold text-gray-900">{stats.pendingVerifications}</p>
-                  <p className="text-gray-600">Pending Requests</p>
-                </div>
-              </div>
+      <main className="min-h-screen bg-gray-50">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          {/* header */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Verifier Dashboard</h1>
+              <p className="text-sm text-gray-500">{user?.name} • {user?.institute}</p>
             </div>
-
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
-                  </svg>
-                </div>
-                <div className="ml-4">
-                  <p className="text-2xl font-bold text-gray-900">{stats.studentsInInstitute}</p>
-                  <p className="text-gray-600">Students in Institute</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center">
-                <div className="p-2 bg-green-100 rounded-lg">
-                  <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <div className="ml-4">
-                  <p className="text-2xl font-bold text-gray-900">{stats.completedVerifications}</p>
-                  <p className="text-gray-600">Completed</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center">
-                <div className="p-2 bg-purple-100 rounded-lg">
-                  <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                  </svg>
-                </div>
-                <div className="ml-4">
-                  <p className="text-2xl font-bold text-gray-900">{stats.totalRequests}</p>
-                  <p className="text-gray-600">Total Requests</p>
-                </div>
-              </div>
+            <div className="flex items-center gap-3">
+              <Link href="/verifier/requests" className="inline-flex items-center gap-2 px-3 py-2 rounded-md bg-white border border-gray-200 shadow-sm text-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                </svg>
+                All requests
+              </Link>
+              <Link href="/verifier/students" className="inline-flex items-center gap-2 px-3 py-2 rounded-md bg-white border border-gray-200 shadow-sm text-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5.121 17.804A11.955 11.955 0 0112 15c2.485 0 4.78.76 6.879 2.044M15 10a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                Students
+              </Link>
             </div>
           </div>
 
-          {/* Quick Actions */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-            {/* Pending Verification Requests */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-              <div className="p-6 border-b border-gray-200">
-                <div className="flex justify-between items-center">
-                  <h2 className="text-lg font-semibold text-gray-900">Pending Verification Requests</h2>
-                  <Link href="/verifier/requests" className="text-primary-600 hover:text-primary-700 text-sm font-medium">
-                    View All
-                  </Link>
+          {/* stats */}
+          <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <StatCard title="Pending Requests" value={stats.pendingVerifications} accent="bg-yellow-50" color="text-yellow-600">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-6 h-6"><path fillRule="evenodd" d="M12 2a10 10 0 100 20 10 10 0 000-20zm1 11h-2V7h2v6zm0 6h-2v-2h2v2z"/></svg>
+            </StatCard>
+
+            <StatCard title="Students in Institute" value={stats.studentsInInstitute} accent="bg-blue-50" color="text-blue-600">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-6 h-6"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+            </StatCard>
+
+            <StatCard title="Completed" value={stats.completedVerifications} accent="bg-green-50" color="text-green-600">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-6 h-6"><path d="M9 16.2l-3.5-3.5L4 14l5 5L20 8l-1.5-1.5z"/></svg>
+            </StatCard>
+
+            <StatCard title="Total Requests" value={stats.totalRequests} accent="bg-purple-50" color="text-purple-600">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-6 h-6"><path d="M3 13h2v-2H3v2zm4 0h14v-2H7v2zM3 7h18V5H3v2zM3 19h18v-2H3v2z"/></svg>
+            </StatCard>
+          </section>
+
+          <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* left: pending list */}
+            <div className="lg:col-span-2 bg-transparent">
+              <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-lg font-medium text-gray-900">Pending Verification Requests</h3>
+                  <Link href="/verifier/requests" className="text-sm text-primary-600">View all</Link>
                 </div>
-              </div>
-              <div className="p-6">
-                {pendingRequests.length > 0 ? (
-                  <div className="space-y-4">
-                    {pendingRequests.slice(0, 5).map((request) => (
-                      <div key={request._id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                        <div className="flex-1">
-                          <p className="font-medium text-gray-900">{request.studentName}</p>
-                          <p className="text-sm text-gray-600">{request.type} • {request.title}</p>
-                        </div>
-                        <div className="flex space-x-2">
-                          <button
-                            onClick={() => handleApproveVerification(request._id)}
-                            className="px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700"
-                          >
-                            Approve
-                          </button>
-                          <button
-                            onClick={() => {
-                              const reason = prompt('Rejection reason (optional):');
-                              handleRejectVerification(request._id, reason || '');
-                            }}
-                            className="px-3 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700"
-                          >
-                            Reject
-                          </button>
-                        </div>
-                      </div>
-                    ))}
+
+                {pendingRequests.length ? (
+                  <div className="space-y-3">
+                    {pendingRequests.slice(0, 6).map((r) => <RequestItem key={r._id} r={r} />)}
                   </div>
                 ) : (
-                  <p className="text-gray-500 text-center py-4">No pending requests</p>
+                  <div className="py-8 text-center text-gray-500">No pending requests.</div>
                 )}
               </div>
-            </div>
 
-            {/* Institute Students */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-              <div className="p-6 border-b border-gray-200">
-                <div className="flex justify-between items-center">
-                  <h2 className="text-lg font-semibold text-gray-900">Students from {user?.institute}</h2>
-                  <Link href="/verifier/students" className="text-primary-600 hover:text-primary-700 text-sm font-medium">
-                    View All
-                  </Link>
-                </div>
-              </div>
-              <div className="p-6">
-                {students.length > 0 ? (
-                  <div className="space-y-4">
-                    {students.slice(0, 5).map((student) => (
-                      <div key={student._id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                        <div className="flex-1">
-                          <p className="font-medium text-gray-900">{student.name}</p>
-                          <p className="text-sm text-gray-600">{student.email}</p>
-                        </div>
-                        <Link
-                          href={`/portfolio/${student._id}`}
-                          target="_blank"
-                          className="px-3 py-1 bg-primary-600 text-white text-xs rounded hover:bg-primary-700"
-                        >
-                          View Portfolio
-                        </Link>
-                      </div>
-                    ))}
+              {/* quick actions / activity */}
+              <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Link href="/verifier/requests/new" className="block rounded-2xl bg-white p-4 border border-gray-100 shadow-sm hover:shadow-md">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-indigo-50 rounded-lg">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-indigo-600" viewBox="0 0 24 24"><path d="M12 5v14m7-7H5"/></svg>
+                    </div>
+                    <div>
+                      <div className="font-medium text-gray-900">Create manual request</div>
+                      <div className="text-xs text-gray-500">Add request on behalf of a student</div>
+                    </div>
                   </div>
-                ) : (
-                  <p className="text-gray-500 text-center py-4">No students found</p>
-                )}
+                </Link>
+
+                <Link href="/verifier/analytics" className="block rounded-2xl bg-white p-4 border border-gray-100 shadow-sm hover:shadow-md">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-green-50 rounded-lg">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-green-600" viewBox="0 0 24 24"><path d="M3 3v18h18"/></svg>
+                    </div>
+                    <div>
+                      <div className="font-medium text-gray-900">View analytics</div>
+                      <div className="text-xs text-gray-500">Trends & verification metrics</div>
+                    </div>
+                  </div>
+                </Link>
               </div>
             </div>
-          </div>
 
-          {/* Navigation Links */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <Link href="/verifier/requests" className="block p-6 bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
-              <div className="flex items-center">
-                <div className="p-2 bg-yellow-100 rounded-lg">
-                  <svg className="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-                  </svg>
-                </div>
-                <div className="ml-4">
-                  <h3 className="text-lg font-medium text-gray-900">Verification Requests</h3>
-                  <p className="text-gray-600">Review and approve student submissions</p>
-                </div>
+            {/* right: students list */}
+            <aside className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-lg font-medium text-gray-900">Students — {user?.institute}</h3>
+                <Link href="/verifier/students" className="text-sm text-primary-600">View all</Link>
               </div>
-            </Link>
 
-            <Link href="/verifier/students" className="block p-6 bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
-              <div className="flex items-center">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
-                  </svg>
+              {students.length ? (
+                <div className="space-y-3">
+                  {students.slice(0, 6).map((s) => (
+                    <div key={s._id} className="flex items-center justify-between gap-3 p-2 rounded-md border border-gray-50">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center text-sm font-medium text-gray-700">{(s.name || 'S').charAt(0)}</div>
+                        <div className="truncate">
+                          <div className="font-medium text-gray-900 truncate">{s.name}</div>
+                          <div className="text-xs text-gray-500 truncate">{s.email}</div>
+                        </div>
+                      </div>
+                      <Link href={`/portfolio/${s._id}`} target="_blank" className="text-xs inline-flex items-center gap-2 px-2 py-1 rounded-md bg-primary-600 text-white">
+                        View
+                      </Link>
+                    </div>
+                  ))}
                 </div>
-                <div className="ml-4">
-                  <h3 className="text-lg font-medium text-gray-900">Institute Students</h3>
-                  <p className="text-gray-600">Browse student portfolios</p>
-                </div>
-              </div>
-            </Link>
+              ) : (
+                <div className="py-8 text-center text-gray-500">No students found.</div>
+              )}
+            </aside>
+          </section>
 
-            <Link href="/verifier/analytics" className="block p-6 bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
-              <div className="flex items-center">
-                <div className="p-2 bg-green-100 rounded-lg">
-                  <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                  </svg>
-                </div>
-                <div className="ml-4">
-                  <h3 className="text-lg font-medium text-gray-900">Analytics</h3>
-                  <p className="text-gray-600">View verification statistics</p>
-                </div>
-              </div>
-            </Link>
-          </div>
+          <footer className="mt-8 text-center text-xs text-gray-400">© {new Date().getFullYear()} TruePortMe — built for verifiers</footer>
         </div>
-      </div>
+      </main>
     </ProtectedRoute>
   );
 }

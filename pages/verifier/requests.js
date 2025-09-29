@@ -88,10 +88,7 @@ export default function VerifierRequests({ showToast }) {
 
   const handleApproveInstitution = async (requestId) => {
     try {
-      await api.put(`/associations/${requestId}/respond`, {
-        action: 'approve',
-        response: ''
-      });
+      await api.post(`/associations/approve-institution/${requestId}`);
       showToast?.('Institution association approved successfully', 'success');
       fetchRequests();
     } catch (error) {
@@ -103,10 +100,7 @@ export default function VerifierRequests({ showToast }) {
   const handleRejectInstitution = async (requestId) => {
     const reason = prompt('Please provide a reason for rejection (optional):');
     try {
-      await api.put(`/associations/${requestId}/respond`, {
-        action: 'reject',
-        response: reason || ''
-      });
+      await api.post(`/verifier/reject-institution/${requestId}`, { reason: reason || '' });
       showToast?.('Institution association rejected', 'success');
       fetchRequests();
     } catch (error) {
@@ -273,36 +267,45 @@ export default function VerifierRequests({ showToast }) {
                                 View
                               </Link>
                             )}
-                            {request.requestType === 'INSTITUTION' ? (
+                            {request.status === 'PENDING' && (
                               <>
-                                <button
-                                  onClick={() => handleApproveInstitution(request.id)}
-                                  className="text-green-600 hover:text-green-900"
-                                >
-                                  Approve
-                                </button>
-                                <button
-                                  onClick={() => handleRejectInstitution(request.id)}
-                                  className="text-red-600 hover:text-red-900"
-                                >
-                                  Reject
-                                </button>
+                                {request.requestType === 'INSTITUTION' ? (
+                                  <>
+                                    <button
+                                      onClick={() => handleApproveInstitution(request.id)}
+                                      className="text-green-600 hover:text-green-900"
+                                    >
+                                      Approve
+                                    </button>
+                                    <button
+                                      onClick={() => handleRejectInstitution(request.id)}
+                                      className="text-red-600 hover:text-red-900"
+                                    >
+                                      Reject
+                                    </button>
+                                  </>
+                                ) : (
+                                  <>
+                                    <button
+                                      onClick={() => handleApprove(request.id)}
+                                      className="text-green-600 hover:text-green-900"
+                                    >
+                                      Approve
+                                    </button>
+                                    <button
+                                      onClick={() => handleReject(request.id)}
+                                      className="text-red-600 hover:text-red-900"
+                                    >
+                                      Reject
+                                    </button>
+                                  </>
+                                )}
                               </>
-                            ) : request.status === 'PENDING' && (
-                              <>
-                                <button
-                                  onClick={() => handleApprove(request.id)}
-                                  className="text-green-600 hover:text-green-900"
-                                >
-                                  Approve
-                                </button>
-                                <button
-                                  onClick={() => handleReject(request.id)}
-                                  className="text-red-600 hover:text-red-900"
-                                >
-                                  Reject
-                                </button>
-                              </>
+                            )}
+                            {request.requestType === 'INSTITUTION' && request.status !== 'PENDING' && (
+                              <span className="text-gray-400 text-xs">
+                                {request.status === 'APPROVED' ? 'Association Approved' : 'Association Rejected'}
+                              </span>
                             )}
                           </div>
                         </td>
