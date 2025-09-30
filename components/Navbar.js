@@ -18,6 +18,14 @@ const Navbar = () => {
     }
   }, [router.pathname]);
 
+  // Check if current route is admin route
+  const isAdminRoute = router.pathname.startsWith('/admin/');
+  
+  // Don't show navbar on admin routes
+  if (isAdminRoute) {
+    return null;
+  }
+
   const handleLogout = () => {
     logout();
     setOpen(false);
@@ -145,7 +153,15 @@ const Navbar = () => {
         <div className="px-4 py-3 border-t border-gray-100 text-xs text-gray-400">
           <div className="flex items-center justify-between">
             <span>© {new Date().getFullYear()} TruePortMe</span>
-            <Link href="/help" onClick={() => setOpen(false)} className="text-gray-500 hover:text-primary-600">Help</Link>
+            <div className="flex items-center space-x-2">
+              <button 
+                className="p-1 rounded text-gray-500 hover:text-primary-600"
+                title="Toggle theme"
+              >
+                ☀️
+              </button>
+              <Link href="/help" onClick={() => setOpen(false)} className="text-gray-500 hover:text-primary-600">Help</Link>
+            </div>
           </div>
         </div>
       </div>

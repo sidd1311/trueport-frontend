@@ -122,19 +122,24 @@ export default function VerifierRequests({ showToast }) {
     );
   };
 
-  const getTypeBadge = (type) => {
-    const styles = {
-      EXPERIENCE: 'bg-blue-100 text-blue-800',
-      EDUCATION: 'bg-purple-100 text-purple-800',
-      PROJECT: 'bg-green-100 text-green-800',
-      INSTITUTION: 'bg-indigo-100 text-indigo-800'
-    };
-    return (
-      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${styles[type] || 'bg-gray-100 text-gray-800'}`}>
-        {type === 'INSTITUTION' ? 'Institution' : type.charAt(0) + type.slice(1).toLowerCase()}
-      </span>
-    );
+ const getTypeBadge = (type) => {
+  const styles = {
+    EXPERIENCE: 'bg-blue-100 text-blue-800',
+    EDUCATION: 'bg-purple-100 text-purple-800',
+    PROJECT: 'bg-green-100 text-green-800',
+    INSTITUTION: 'bg-indigo-100 text-indigo-800'
   };
+
+  const safeType = typeof type === 'string' && type.length ? type : 'UNKNOWN';
+  const display = safeType === 'INSTITUTION' ? 'Institution' : (safeType.charAt(0) + safeType.slice(1).toLowerCase());
+
+  return (
+    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${styles[safeType] || 'bg-gray-100 text-gray-800'}`}>
+      {display}
+    </span>
+  );
+};
+
 
   return (
     <ProtectedRoute>

@@ -1,9 +1,21 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
+import dynamic from 'next/dynamic';
 import ProtectedRoute from '../../../components/ProtectedRoute';
 import Uploader from '../../../components/Uploader';
 import api from '../../../utils/api';
+
+// load react-select client-side only to avoid SSR/hydration issues
+const CreatableSelect = dynamic(() => import('react-select/creatable'), { ssr: false });
+
+const SKILL_OPTIONS = [
+  'React','React Native','Next.js','Node.js','Express','MongoDB','Postgres','TypeScript',
+  'JavaScript','Python','Django','Flask','Java','Spring Boot','C++','C#','Go','Rust',
+  'HTML','CSS','Tailwind CSS','Bootstrap','Redux','MobX','GraphQL','Apollo','REST',
+  'Docker','Kubernetes','AWS','GCP','Azure','Firebase','Redis','Postman','Jest','Cypress',
+  'TensorFlow','PyTorch','Pandas','Numpy','SQL','NoSQL','Electron','Socket.IO','Three.js'
+].map(s => ({ label: s, value: s }));
 
 export default function EditExperience({ showToast }) {
   const router = useRouter();
@@ -14,7 +26,7 @@ export default function EditExperience({ showToast }) {
     role: '',
     startDate: '',
     endDate: '',
-    tags: '',
+    tags: [],
     attachments: [],
   });
   const [loading, setLoading] = useState(false);
@@ -24,26 +36,34 @@ export default function EditExperience({ showToast }) {
     if (id) {
       fetchExperience();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const fetchExperience = async () => {
     try {
       setFetchLoading(true);
       const response = await api.get(`/experiences/${id}`);
-      const experience = response.data.experience || response.data;
-      
+      const experience = response.data.experience || response.data || {};
+
+      // normalize tags to array
+      const tagsArr = Array.isArray(experience.tags)
+        ? experience.tags
+        : (typeof experience.tags === 'string' && experience.tags.trim() !== '')
+          ? experience.tags.split(',').map(t => t.trim()).filter(Boolean)
+          : [];
+
       setFormData({
         title: experience.title || '',
         description: experience.description || '',
         role: experience.role || '',
         startDate: experience.startDate ? experience.startDate.split('T')[0] : '',
         endDate: experience.endDate ? experience.endDate.split('T')[0] : '',
-        tags: Array.isArray(experience.tags) ? experience.tags.join(', ') : '',
-        attachments: experience.attachments || [],
+        tags: tagsArr,
+        attachments: Array.isArray(experience.attachments) ? experience.attachments : (experience.attachments ? [experience.attachments] : []),
       });
     } catch (error) {
       console.error('Failed to fetch experience:', error);
-      showToast('Failed to load experience', 'error');
+      showToast?.('Failed to load experience', 'error');
       router.push('/experiences');
     } finally {
       setFetchLoading(false);
@@ -51,33 +71,26 @@ export default function EditExperience({ showToast }) {
   };
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
-  };
-
-  const handleTagsChange = (e) => {
-    setFormData({
-      ...formData,
-      tags: e.target.value,
-    });
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value,
+    }));
   };
 
   const handleFileUpload = (urls) => {
     const attachmentUrls = Array.isArray(urls) ? urls : [urls];
-    setFormData({
-      ...formData,
-      attachments: [...formData.attachments, ...attachmentUrls],
-    });
+    setFormData(prev => ({
+      ...prev,
+      attachments: [...(prev.attachments || []), ...attachmentUrls],
+    }));
   };
 
   const removeAttachment = (index) => {
-    const newAttachments = formData.attachments.filter((_, i) => i !== index);
-    setFormData({
-      ...formData,
-      attachments: newAttachments,
-    });
+    setFormData(prev => ({
+      ...prev,
+      attachments: prev.attachments.filter((_, i) => i !== index),
+    }));
   };
 
   const handleSubmit = async (e) => {
@@ -87,15 +100,18 @@ export default function EditExperience({ showToast }) {
     try {
       const payload = {
         ...formData,
-        tags: formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag),
+        // ensure tags is an array of strings for backend
+        tags: Array.isArray(formData.tags)
+          ? formData.tags
+          : (formData.tags || '').toString().split(',').map(t => t.trim()).filter(Boolean),
       };
 
       await api.put(`/experiences/${id}`, payload);
-      showToast('Experience updated successfully!', 'success');
+      showToast?.('Experience updated successfully!', 'success');
       router.push('/experiences');
     } catch (error) {
       console.error('Failed to update experience:', error);
-      showToast(error.response?.data?.message || 'Failed to update experience', 'error');
+      showToast?.(error.response?.data?.message || 'Failed to update experience', 'error');
     } finally {
       setLoading(false);
     }
@@ -210,16 +226,22 @@ export default function EditExperience({ showToast }) {
                 <label htmlFor="tags" className="block text-sm font-medium text-gray-700">
                   Tags
                 </label>
-                <input
-                  type="text"
-                  id="tags"
-                  name="tags"
-                  className="form-input mt-1"
-                  placeholder="e.g., JavaScript, React, Node.js, API Development"
-                  value={formData.tags}
-                  onChange={handleTagsChange}
+
+                <CreatableSelect
+                  isMulti
+                  options={SKILL_OPTIONS}
+                  // guard tags with Array.isArray
+                  value={Array.isArray(formData.tags) ? formData.tags.map(t => ({ label: t, value: t })) : []}
+                  onChange={(selected) => {
+                    const arr = Array.isArray(selected) ? selected.map(s => s.value) : [];
+                    setFormData(prev => ({ ...prev, tags: arr }));
+                  }}
+                  placeholder="Type or select tags (press Enter to add)"
+                  className="react-select-container mt-1"
+                  classNamePrefix="react-select"
+                  formatCreateLabel={(input) => `Add "${input}"`}
                 />
-                <p className="mt-1 text-xs text-gray-500">Separate tags with commas</p>
+                <p className="mt-1 text-xs text-gray-500">Pick from common tags or type and press Enter to add custom ones.</p>
               </div>
 
               <div>
@@ -231,7 +253,7 @@ export default function EditExperience({ showToast }) {
                   multiple={true}
                   accept=".jpg,.jpeg,.png,.pdf"
                 />
-                
+
                 {formData.attachments.length > 0 && (
                   <div className="mt-4">
                     <h4 className="text-sm font-medium text-gray-700 mb-2">Uploaded Files:</h4>

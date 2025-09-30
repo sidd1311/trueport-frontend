@@ -19,5 +19,15 @@ export const isAuthenticated = () => {
 
 export const logout = () => {
   removeAuthToken();
-  window.location.href = '/auth/login';
+  localStorage.removeItem('user');
+  
+  // Check if current page is admin route
+  const currentPath = window.location.pathname;
+  if (currentPath.startsWith('/admin/super-admin')) {
+    window.location.href = '/admin/super-admin/login';
+  } else if (currentPath.startsWith('/admin/institute-admin')) {
+    window.location.href = '/admin/institute-admin/login';
+  } else {
+    window.location.href = '/auth/login';
+  }
 };

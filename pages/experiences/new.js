@@ -4,6 +4,14 @@ import Head from 'next/head';
 import ProtectedRoute from '../../components/ProtectedRoute';
 import Uploader from '../../components/Uploader';
 import api from '../../utils/api';
+import CreatableSelect from 'react-select/creatable';
+const SKILL_OPTIONS = [
+  'React','React Native','Next.js','Node.js','Express','MongoDB','Postgres','TypeScript',
+  'JavaScript','Python','Django','Flask','Java','Spring Boot','C++','C#','Go','Rust',
+  'HTML','CSS','Tailwind CSS','Bootstrap','Redux','MobX','GraphQL','Apollo','REST',
+  'Docker','Kubernetes','AWS','GCP','Azure','Firebase','Redis','Postman','Jest','Cypress',
+  'TensorFlow','PyTorch','Pandas','Numpy','SQL','NoSQL','Electron','Socket.IO','Three.js'
+].map(s => ({ label: s, value: s }));
 
 export default function NewExperience({ showToast }) {
   const router = useRouter();
@@ -13,7 +21,7 @@ export default function NewExperience({ showToast }) {
     role: '',
     startDate: '',
     endDate: '',
-    tags: '',
+    tags: [],
     attachments: [],
   });
   const [loading, setLoading] = useState(false);
@@ -27,8 +35,7 @@ export default function NewExperience({ showToast }) {
 
   const handleTagsChange = (e) => {
     setFormData({
-      ...formData,
-      tags: e.target.value,
+      ...formData,  
     });
   };
 
@@ -55,7 +62,6 @@ export default function NewExperience({ showToast }) {
     try {
       const payload = {
         ...formData,
-        tags: formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag),
       };
 
       await api.post('/experiences', payload);
@@ -165,20 +171,25 @@ export default function NewExperience({ showToast }) {
               </div>
 
               <div>
-                <label htmlFor="tags" className="block text-sm font-medium text-gray-700">
-                  Tags
-                </label>
-                <input
-                  type="text"
-                  id="tags"
-                  name="tags"
-                  className="form-input mt-1"
-                  placeholder="e.g., JavaScript, React, Node.js, API Development"
-                  value={formData.tags}
-                  onChange={handleTagsChange}
-                />
-                <p className="mt-1 text-xs text-gray-500">Separate tags with commas</p>
-              </div>
+  <label htmlFor="tags" className="block text-sm font-medium text-gray-700">
+    Tags
+  </label>
+
+  <CreatableSelect
+    isMulti
+    options={SKILL_OPTIONS}
+    value={formData.tags.map(t => ({ label: t, value: t }))}
+    onChange={(selected) => {
+      const arr = Array.isArray(selected) ? selected.map(s => s.value) : [];
+      setFormData(prev => ({ ...prev, tags: arr }));
+    }}
+    placeholder="Type or select tags (press Enter to add)"
+    className="react-select-container mt-1"
+    classNamePrefix="react-select"
+    formatCreateLabel={(input) => `Add "${input}"`}
+  />
+  <p className="mt-1 text-xs text-gray-500">Pick from common tags or type and press Enter to add custom ones.</p>
+</div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">

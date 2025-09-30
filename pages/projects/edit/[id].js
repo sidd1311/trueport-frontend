@@ -4,6 +4,15 @@ import Head from 'next/head';
 import ProtectedRoute from '../../../components/ProtectedRoute';
 import api from '../../../utils/api';
 
+import CreatableSelect from 'react-select/creatable';
+const SKILL_OPTIONS = [
+  'React','React Native','Next.js','Node.js','Express','MongoDB','Postgres','TypeScript',
+  'JavaScript','Python','Django','Flask','Java','Spring Boot','C++','C#','Go','Rust',
+  'HTML','CSS','Tailwind CSS','Bootstrap','Redux','MobX','GraphQL','Apollo','REST',
+  'Docker','Kubernetes','AWS','GCP','Azure','Firebase','Redis','Postman','Jest','Cypress',
+  'TensorFlow','PyTorch','Pandas','Numpy','SQL','NoSQL','Electron','Socket.IO','Three.js'
+].map(s => ({ label: s, value: s }));
+
 export default function EditProject({ showToast }) {
   const router = useRouter();
   const { id } = router.query;
@@ -189,51 +198,26 @@ export default function EditProject({ showToast }) {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Technologies Used
-                </label>
-                <div className="flex gap-2 mb-3">
-                  <input
-                    type="text"
-                    className="form-input flex-1"
-                    placeholder="Enter technology (e.g., React, Node.js, Python)"
-                    value={techInput}
-                    onChange={(e) => setTechInput(e.target.value)}
-                    onKeyPress={(e) => {
-                      if (e.key === 'Enter') {
-                        addTechnology(e);
-                      }
-                    }}
-                  />
-                  <button
-                    type="button"
-                    onClick={addTechnology}
-                    className="btn-secondary"
-                  >
-                    Add
-                  </button>
-                </div>
-                
-                {formData.technologies.length > 0 && (
-                  <div className="flex flex-wrap gap-2">
-                    {formData.technologies.map((tech) => (
-                      <span
-                        key={tech}
-                        className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-primary-100 text-primary-800"
-                      >
-                        {tech}
-                        <button
-                          type="button"
-                          onClick={() => removeTechnology(tech)}
-                          className="ml-2 text-primary-600 hover:text-primary-800"
-                        >
-                          ×
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
+  <label className="block text-sm font-medium text-gray-700 mb-2">Technologies Used</label>
+
+  <CreatableSelect
+    isMulti
+    options={SKILL_OPTIONS}
+    // current value as array of {label,value}
+    value={formData.technologies.map(t => ({ label: t, value: t }))}
+    onChange={(selected) => {
+      // selected can be null
+      const arr = Array.isArray(selected) ? selected.map(s => s.value) : [];
+      setFormData(prev => ({ ...prev, technologies: arr }));
+    }}
+    placeholder="Type or select technologies (press Enter to add)"
+    className="react-select-container"
+    classNamePrefix="react-select"
+    formatCreateLabel={(input) => `Add "${input}"`}
+  />
+
+  <p className="mt-1 text-sm text-gray-500">Pick from common techs or type and press Enter to add custom ones.</p>
+</div>
 
               <div>
                 <label htmlFor="learnings" className="block text-sm font-medium text-gray-700">

@@ -16,13 +16,79 @@ const AuthForm = ({ type = 'login' }) => {
 
   const isLogin = type === 'login';
 
-  // Log component mount and current auth state
+  // Listen for messages from Google OAuth popup
+useEffect(() => {
+  // The message will come from the SAME frontend origin (popup -> parent)
+  const allowedOrigin = process.env.NEXT_PUBLIC_FRONTEND_URL
+    ? new URL(process.env.NEXT_PUBLIC_FRONTEND_URL).origin
+    : window.location.origin;
+
+  const handler = async (event) => {
+    console.log('Message received:', event.origin, event.data);
+
+    if (event.origin !== allowedOrigin) {
+      console.warn('Message from untrusted origin:', event.origin);
+      return;
+    }
+
+    // Success payload might include token OR just user (cookie auth)
+    if (event.data?.type === 'GOOGLE_AUTH_SUCCESS') {
+      setLoading(false);
+
+      const { token, user, cookieAuth } = event.data;
+
+      if (token) {
+        // token-in-body flow (same as before)
+        try { setAuthToken(token); } catch (e) { console.warn(e); }
+        if (user) localStorage.setItem('user', JSON.stringify(user));
+        if (popupRef.current && !popupRef.current.closed) popupRef.current.close();
+        router.push('/dashboard');
+        return;
+      }
+
+      // cookie-based flow: validate session by calling backend validate endpoint (send cookies)
+      try {
+        const API_BASE = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000').replace(/\/$/, '');
+        const resp = await fetch(`${API_BASE}/auth/validate`, {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({})
+        });
+        const data = await resp.json();
+        if (resp.ok && data.valid) {
+          localStorage.setItem('user', JSON.stringify(data.user));
+          if (popupRef.current && !popupRef.current.closed) popupRef.current.close();
+          router.push('/dashboard');
+          return;
+        } else {
+          throw new Error(data.message || 'Session validation failed');
+        }
+      } catch (err) {
+        console.error('Failed to validate cookie session after popup auth:', err);
+        setError(err.message || 'Google sign-in failed');
+        if (popupRef.current && !popupRef.current.closed) popupRef.current.close();
+      }
+    }
+
+    if (event.data?.type === 'GOOGLE_AUTH_ERROR') {
+      console.error('Google auth error:', event.data.error);
+      setError(event.data.error || 'Google sign-in failed');
+      setLoading(false);
+      if (popupRef.current && !popupRef.current.closed) popupRef.current.close();
+    }
+  };
+
+  window.addEventListener('message', handler);
+  return () => window.removeEventListener('message', handler);
+}, [router]);
+
+  // Component mount log
   useEffect(() => {
     console.log('=== AUTH FORM COMPONENT MOUNTED ===');
     console.log('Form type:', type);
     console.log('Is login:', isLogin);
     console.log('Current auth token on mount:', getAuthToken());
-    console.log('Current localStorage user on mount:', localStorage.getItem('user'));
     console.log('API_BASE_URL:', process.env.NEXT_PUBLIC_API_URL);
   }, [type, isLogin]);
 
@@ -33,92 +99,49 @@ const AuthForm = ({ type = 'login' }) => {
     });
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  setLoading(true);
+  setError('');
 
-    try {
-      const endpoint = isLogin ? '/auth/login' : '/auth/register';
-      const payload = isLogin 
-        ? { email: formData.email, password: formData.password }
-        : {
-            name: formData.name,
-            email: formData.email,
-            password: formData.password
-          };
+  try {
+    const endpoint = isLogin ? '/auth/login' : '/auth/register';
+    const payload = isLogin
+      ? { email: formData.email, password: formData.password }
+      : { name: formData.name, email: formData.email, password: formData.password };
 
-      const response = await api.post(endpoint, payload);
-      const { token, user } = response.data;
+    const response = await api.post(endpoint, payload);
+    const { token, user } = response.data;
 
-      console.log('Regular auth success:', { token, user });
-      
-      setAuthToken(token);
-      localStorage.setItem('user', JSON.stringify(user));
-      
-      // Verify that the token was set
-      console.log('Token after setting (regular):', getAuthToken());
-      console.log('User after setting (regular):', localStorage.getItem('user'));
+    console.log('Regular auth success');
 
-      // Redirect to dashboard after registration (role can be set later in profile)
-      router.push('/dashboard');
-    } catch (err) {
-      setError(err.response?.data?.message || 'Something went wrong');
-    } finally {
-      setLoading(false);
-    }
-  };
+    // Save token in cookie and user in localStorage
+    setAuthToken(token);
+    localStorage.setItem('user', JSON.stringify(user));
+
+    router.push('/dashboard');
+  } catch (err) {
+    setError(err.response?.data?.message || 'Something went wrong');
+  } finally {
+    setLoading(false);
+  }
+};
+
+  
 const handleGoogleAuth = () => {
   setLoading(true);
   setError('');
 
-  const API_BASE = (process.env.NEXT_PUBLIC_API_URL).replace(/\/$/, '');
-  const popup = window.open(`${API_BASE}/auth/google`, 'google-auth', 'width=500,height=650');
+  const API_BASE = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000').replace(/\/$/, '');
+  const googleAuthUrl = `${API_BASE}/auth/google`;
 
-  if (!popup) {
-    setError('Popup blocked. Allow popups for this site.');
-    setLoading(false);
-    return;
-  }
-  popupRef.current = popup;
+  console.log('Redirecting to Google auth:', googleAuthUrl);
 
-  // monitor popup close
-  const checkClosed = setInterval(() => {
-    if (!popupRef.current || popupRef.current.closed) {
-      clearInterval(checkClosed);
-      setLoading(false);
-    }
-  }, 500);
-
-  // fallback timeout
-  const SAFE_TIMEOUT = 15000;
-  const fallback = setTimeout(() => {
-    try { if (popupRef.current && !popupRef.current.closed) popupRef.current.close(); } catch(e){}
-    setError('Google sign-in timed out or cancelled.');
-    setLoading(false);
-  }, SAFE_TIMEOUT);
-
-  // message listener lives in your existing useEffect (good) — nothing else needed here
+  // Simple redirect - cookie will be set by backend
+  window.location.href = googleAuthUrl;
 };
 
-
-  // Listen for messages from Google OAuth popup
-useEffect(()=>{
-  const allowedOrigin = new URL(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000').origin;
-  const handler = (event)=>{
-    if (event.origin !== allowedOrigin) return;
-    if (event.data?.type === 'GOOGLE_AUTH_SUCCESS') {
-      const { token, user } = event.data;
-      setAuthToken(token); localStorage.setItem('user', JSON.stringify(user));
-      event.source?.postMessage('PARENT_ACK', event.origin); // tell popup it's safe to close
-      router.push('/dashboard');
-    }
-    if (event.data?.type === 'GOOGLE_AUTH_ERROR') { /* handle error */ }
-  };
-  window.addEventListener('message', handler);
-  return ()=> window.removeEventListener('message', handler);
-}, [router]);
-
+// For regular login, also set cookie instead of localStorage
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -130,33 +153,28 @@ useEffect(()=>{
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           {error && (
-            <div className="bg-error-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
               {error}
             </div>
           )}
-          
+
           <div className="space-y-4">
             {!isLogin && (
-              <>
-                <div>
-                  <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-                    Full Name
-                  </label>
-                  <input
-                    id="name"
-                    name="name"
-                    type="text"
-                    required
-                    className="form-input mt-1"
-                    placeholder="John Doe"
-                    value={formData.name}
-                    onChange={handleChange}
-                  />
-                </div>
-
-
-
-              </>
+              <div>
+                <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+                  Full Name
+                </label>
+                <input
+                  id="name"
+                  name="name"
+                  type="text"
+                  required
+                  className="form-input mt-1"
+                  placeholder="John Doe"
+                  value={formData.name}
+                  onChange={handleChange}
+                />
+              </div>
             )}
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700">
@@ -205,9 +223,9 @@ useEffect(()=>{
                 <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
                 <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
               </svg>
-              Continue with Google
+              {loading ? 'Connecting...' : 'Continue with Google'}
             </button>
-            
+
             <div className="relative mb-4">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-gray-300" />
@@ -226,7 +244,7 @@ useEffect(()=>{
             </button>
           </div>
 
-          <div className="text-center">
+          <div className="text-center space-y-2">
             <span className="text-sm text-gray-600">
               {isLogin ? "Don't have an account? " : "Already have an account? "}
               <a
@@ -236,6 +254,27 @@ useEffect(()=>{
                 {isLogin ? 'Sign up' : 'Sign in'}
               </a>
             </span>
+            
+            {isLogin && (
+              <div className="pt-4 border-t border-gray-200">
+                <p className="text-xs text-gray-500 mb-2">Admin Access</p>
+                <div className="flex space-x-4 justify-center">
+                  <a
+                    href="/admin/super-admin/login"
+                    className="text-xs text-blue-600 hover:text-blue-500"
+                  >
+                    Super Admin
+                  </a>
+                  <span className="text-gray-300">|</span>
+                  <a
+                    href="/admin/institute-admin/login"
+                    className="text-xs text-green-600 hover:text-green-500"
+                  >
+                    Institute Admin
+                  </a>
+                </div>
+              </div>
+            )}
           </div>
         </form>
       </div>
