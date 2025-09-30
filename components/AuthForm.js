@@ -2,9 +2,9 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/router';
 import api from '../utils/api';
 import { setAuthToken, getAuthToken } from '../utils/auth';
-const popupRef = useRef(null);
 
 const AuthForm = ({ type = 'login' }) => {
+  const popupRef = useRef(null);
   const router = useRouter();
   const [formData, setFormData] = useState({
     email: '',
