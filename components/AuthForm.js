@@ -67,77 +67,39 @@ const AuthForm = ({ type = 'login' }) => {
       setLoading(false);
     }
   };
+const handleGoogleAuth = () => {
+  setLoading(true);
+  setError('');
 
-  const handleGoogleAuth = () => {
-    console.log('=== GOOGLE AUTH STARTED ===');
-    console.log('Current loading state:', loading);
-    console.log('Current error state:', error);
-    console.log('Current auth token before popup:', getAuthToken());
-    console.log('Current localStorage user before popup:', localStorage.getItem('user'));
-    
-    setLoading(true);
-    setError('');
-    
-    // Debug environment variables
-    console.log('Environment NEXT_PUBLIC_API_URL:', process.env.NEXT_PUBLIC_API_URL);
-    
-    // Use hardcoded URL to avoid caching issues for now
-    const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
-    console.log('API_BASE_URL:', API_BASE_URL);
-    console.log('Google auth URL:', `${API_BASE_URL}/auth/google`);
-    
-    // Test backend accessibility before opening popup
-    console.log('Testing backend accessibility...');
-    fetch(`${API_BASE_URL}/auth/google`)
-      .then(response => {
-        console.log('✅ Backend response status:', response.status);
-        console.log('✅ Backend response headers:', [...response.headers.entries()]);
-      })
-      .catch(error => {
-        console.log('❌ Backend accessibility error:', error);
-        console.log('❌ This might be why popup closes immediately');
-      });
-    
-    console.log('About to open popup...');
-    
- const API_BASE = (process.env.NEXT_PUBLIC_API_URL).replace(/\/$/, '');
-const popup = window.open(`${API_BASE}/auth/google`, 'google-auth','width=500,height=600');
+  const API_BASE = (process.env.NEXT_PUBLIC_API_URL).replace(/\/$/, '');
+  const popup = window.open(`${API_BASE}/auth/google`, 'google-auth', 'width=500,height=650');
 
-    console.log('Popup object:', popup);
-    console.log('Popup opened successfully:', !!popup);
-    console.log('Popup closed immediately?', popup?.closed);
-    
-    // Add a small delay to check popup status
-    setTimeout(() => {
-      console.log('Popup status after 100ms - closed:', popup?.closed);
-      if (popup?.closed) {
-        console.log('🔥 POPUP CLOSED IMMEDIATELY - This indicates a network/URL issue');
-      }
-    }, 100);
+  if (!popup) {
+    setError('Popup blocked. Allow popups for this site.');
+    setLoading(false);
+    return;
+  }
+  popupRef.current = popup;
 
-    // Check if popup was blocked
-    if (!popup) {
-      console.log('ERROR: Popup was blocked');
-      setError('Popup was blocked. Please allow popups for this site.');
+  // monitor popup close
+  const checkClosed = setInterval(() => {
+    if (!popupRef.current || popupRef.current.closed) {
+      clearInterval(checkClosed);
       setLoading(false);
-      return;
     }
+  }, 500);
 
-    // Check if popup is still open (in case user closes it)
-    const checkClosed = setInterval(() => {
-      console.log('Checking popup status - closed:', popup.closed);
-      if (popup.closed) {
-        console.log('=== POPUP CLOSED MANUALLY ===');
-        console.log('Auth token after manual close:', getAuthToken());
-        console.log('LocalStorage user after manual close:', localStorage.getItem('user'));
-        clearInterval(checkClosed);
-        setLoading(false);
-      }
-    }, 1000);
+  // fallback timeout
+  const SAFE_TIMEOUT = 15000;
+  const fallback = setTimeout(() => {
+    try { if (popupRef.current && !popupRef.current.closed) popupRef.current.close(); } catch(e){}
+    setError('Google sign-in timed out or cancelled.');
+    setLoading(false);
+  }, SAFE_TIMEOUT);
 
-    // Store the interval ID for cleanup
-    window.googleAuthCheckInterval = checkClosed;
-  };
+  // message listener lives in your existing useEffect (good) — nothing else needed here
+};
+
 
   // Listen for messages from Google OAuth popup
 useEffect(()=>{
