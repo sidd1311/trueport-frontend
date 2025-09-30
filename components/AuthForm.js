@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/router';
 import api from '../utils/api';
 import { setAuthToken, getAuthToken } from '../utils/auth';
+const popupRef = useRef(null);
 
 const AuthForm = ({ type = 'login' }) => {
   const router = useRouter();
