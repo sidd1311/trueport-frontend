@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/router';
 import api from '../utils/api';
 import { setAuthToken, getAuthToken } from '../utils/auth';
+import Link from 'next/link';
+
 
 const AuthForm = ({ type = 'login' }) => {
   const popupRef = useRef(null);
@@ -255,26 +257,20 @@ const handleGoogleAuth = () => {
               </a>
             </span>
             
-            {isLogin && (
-              <div className="pt-4 border-t border-gray-200">
-                <p className="text-xs text-gray-500 mb-2">Admin Access</p>
-                <div className="flex space-x-4 justify-center">
-                  <a
-                    href="/admin/super-admin/login"
-                    className="text-xs text-blue-600 hover:text-blue-500"
-                  >
-                    Super Admin
-                  </a>
-                  <span className="text-gray-300">|</span>
-                  <a
-                    href="/admin/institute-admin/login"
-                    className="text-xs text-green-600 hover:text-green-500"
-                  >
-                    Institute Admin
-                  </a>
-                </div>
-              </div>
-            )}
+           {isLogin && (
+  <div className="pt-4 border-t border-gray-200">
+    <p className="text-xs text-gray-500 mb-2">Admin Access</p>
+    <div className="flex space-x-4 justify-center">
+      <Link href="/admin/super-admin/login">
+        <a className="text-xs text-blue-600 hover:text-blue-500">Super Admin</a>
+      </Link>
+      <span className="text-gray-300">|</span>
+      <Link href="/admin/institute-admin/login">
+        <a className="text-xs text-green-600 hover:text-green-500">Institute Admin</a>
+      </Link>
+    </div>
+  </div>
+)}
           </div>
         </form>
       </div>
