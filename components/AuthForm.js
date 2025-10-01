@@ -249,24 +249,30 @@ const handleGoogleAuth = () => {
           <div className="text-center space-y-2">
             <span className="text-sm text-gray-600">
               {isLogin ? "Don't have an account? " : "Already have an account? "}
-              <a
+              <Link
                 href={isLogin ? '/auth/register' : '/auth/login'}
                 className="font-medium text-primary-600 hover:text-primary-500"
               >
                 {isLogin ? 'Sign up' : 'Sign in'}
-              </a>
+              </Link>
             </span>
             
            {isLogin && (
   <div className="pt-4 border-t border-gray-200">
     <p className="text-xs text-gray-500 mb-2">Admin Access</p>
     <div className="flex space-x-4 justify-center">
-      <Link href="/admin/super-admin/login">
-        <a className="text-xs text-blue-600 hover:text-blue-500">Super Admin</a>
+      <Link 
+        href="/admin/super-admin/login"
+        className="text-xs text-blue-600 hover:text-blue-500"
+      >
+        Super Admin
       </Link>
       <span className="text-gray-300">|</span>
-      <Link href="/admin/institute-admin/login">
-        <a className="text-xs text-green-600 hover:text-green-500">Institute Admin</a>
+      <Link 
+        href="/admin/institute-admin/login"
+        className="text-xs text-green-600 hover:text-green-500"
+      >
+        Institute Admin
       </Link>
     </div>
   </div>

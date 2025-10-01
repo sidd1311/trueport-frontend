@@ -24,6 +24,11 @@ function SuperAdminDashboardContent() {
   const [editingInstitutionId, setEditingInstitutionId] = useState(null);
   const [editingAdminId, setEditingAdminId] = useState(null);
 
+  // CSV bulk import for admins
+  const [adminCsvFile, setAdminCsvFile] = useState(null);
+  const [adminCsvImportLoading, setAdminCsvImportLoading] = useState(false);
+  const [adminCsvResults, setAdminCsvResults] = useState(null);
+
   // form states - match backend fields
   const [institutionForm, setInstitutionForm] = useState({
     name: '',

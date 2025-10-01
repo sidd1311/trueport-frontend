@@ -47,3 +47,60 @@ export const validateFile = (file) => {
 
   return { valid: true };
 };
+
+export const validateCSVFile = (file) => {
+  const maxSize = 2 * 1024 * 1024; // 2MB for CSV files
+  const allowedTypes = ['text/csv', 'application/vnd.ms-excel'];
+
+  if (file.size > maxSize) {
+    return { valid: false, error: 'CSV file size must be less than 2MB' };
+  }
+
+  if (!allowedTypes.includes(file.type) && !file.name.toLowerCase().endsWith('.csv')) {
+    return { valid: false, error: 'Only CSV files are allowed' };
+  }
+
+  return { valid: true };
+};
+
+export const uploadCSVToCloudinary = async (file) => {
+  const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD;
+  const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
+
+  if (!cloudName || !uploadPreset) {
+    throw new Error('Cloudinary configuration missing');
+  }
+
+  // Validate CSV file
+  const validation = validateCSVFile(file);
+  if (!validation.valid) {
+    throw new Error(validation.error);
+  }
+
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('upload_preset', uploadPreset);
+  formData.append('resource_type', 'raw'); // Important: Use 'raw' for non-image files
+
+  try {
+    const response = await fetch(`${CLOUDINARY_UPLOAD_URL}/${cloudName}/raw/upload`, {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error?.message || 'Upload failed');
+    }
+
+    const data = await response.json();
+    return {
+      url: data.secure_url,
+      public_id: data.public_id,
+      resource_type: data.resource_type,
+    };
+  } catch (error) {
+    console.error('Cloudinary CSV upload error:', error);
+    throw error;
+  }
+};

@@ -70,6 +70,18 @@ export const superAdminAPI = {
   getAnalytics: async () => {
     const response = await api.get('/super-admin/analytics');
     return response.data;
+  },
+
+  // CSV Bulk Import for Institute Admins
+  bulkImportAdminsCSV: async (csvData) => {
+    const response = await api.post('/super-admin/institute-admins/bulk-import-csv', { csvData });
+    return response.data;
+  },
+
+  // Download template CSV for institute admins
+  downloadAdminTemplate: async () => {
+    const response = await api.get('/super-admin/institute-admins/csv-template', { responseType: 'blob' });
+    return response.data;
   }
 };
 
@@ -147,6 +159,18 @@ export const instituteAdminAPI = {
 
   bulkImport: async (users) => {
     const response = await api.post('/institute-admin/users/bulk-import', { users });
+    return response.data;
+  },
+
+  // CSV Bulk Import - accepts CSV URL from Cloudinary, returns CSV with generated passwords
+  bulkImportCSV: async (csvUrl) => {
+    const response = await api.post('/institute-admin/users/bulk-import', { csvUrl });
+    return response.data;
+  },
+
+  // Download template CSV
+  downloadTemplate: async () => {
+    const response = await api.get('/institute-admin/users/csv-template', { responseType: 'blob' });
     return response.data;
   },
 

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
@@ -6,6 +6,7 @@ import ProtectedRoute from '../components/ProtectedRoute';
 import EducationCard from '../components/EducationCard';
 import GitHubProjectCard from '../components/GitHubProjectCard';
 import api from '../utils/api';
+import userAPI from '../utils/userAPI';
 
 export default function Profile({ showToast }) {
   const router = useRouter();
@@ -22,14 +23,22 @@ export default function Profile({ showToast }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('profile');
-  const [institutionStatus, setInstitutionStatus] = useState('NONE'); // NONE, PENDING, APPROVED, REJECTED
+  const [associationStatus, setAssociationStatus] = useState('NONE'); // NONE, PENDING, APPROVED, REJECTED
   const [institutionRequest, setInstitutionRequest] = useState(null);
+  
+  // Password change state
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+  const [passwordLoading, setPasswordLoading] = useState(false);
 
   useEffect(() => {
     fetchUser();
     fetchEducation();
     fetchProjects();
-    fetchInstitutionStatus();
+    fetchAssociationStatus();
   }, []);
 
   const fetchUser = async () => {
@@ -75,15 +84,15 @@ export default function Profile({ showToast }) {
     }
   };
 
-  const fetchInstitutionStatus = async () => {
+  const fetchAssociationStatus = async () => {
     try {
       const response = await api.get('/associations/my-requests');
-      setInstitutionStatus(response.data.status || 'NONE');
+      setAssociationStatus(response.data.associationStatus || 'NONE');
       setInstitutionRequest(response.data.request || null);
     } catch (error) {
-      console.error('Failed to fetch institution status:', error);
+      console.error('Failed to fetch association status:', error);
       // If endpoint doesn't exist yet, assume NONE status
-      setInstitutionStatus('NONE');
+      setAssociationStatus('NONE');
     }
   };
 
@@ -122,14 +131,14 @@ export default function Profile({ showToast }) {
           institute: user.institute,
           requestedRole: user.role
         });
-        setInstitutionStatus('PENDING');
+        setAssociationStatus('PENDING');
         setInstitutionRequest(response.data.request);
         showToast('Institution association request submitted! Waiting for verifier approval.', 'success');
       } else {
         // For verifiers, update directly (they can self-approve)
         const response = await api.put('/users/me', user);
         setUser(response.data.user);
-        setInstitutionStatus('APPROVED');
+        setAssociationStatus('APPROVED');
         showToast('Institution association updated successfully!', 'success');
       }
     } catch (error) {
@@ -185,6 +194,40 @@ export default function Profile({ showToast }) {
     } catch (error) {
       console.error('Failed to request verification:', error);
       showToast(error.response?.data?.message || 'Failed to request verification', 'error');
+    }
+  };
+
+  // Password change functions
+  const handlePasswordChange = (e) => {
+    setPasswordData({
+      ...passwordData,
+      [e.target.name]: e.target.value,
+    });
+  };
+
+  const handlePasswordSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      showToast('New passwords do not match', 'error');
+      return;
+    }
+
+    if (passwordData.newPassword.length < 6) {
+      showToast('New password must be at least 6 characters', 'error');
+      return;
+    }
+
+    setPasswordLoading(true);
+    try {
+      await userAPI.changePassword(passwordData.currentPassword, passwordData.newPassword);
+      showToast('Password changed successfully', 'success');
+      setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+    } catch (error) {
+      console.error('Failed to change password:', error);
+      showToast(error.response?.data?.message || 'Failed to change password', 'error');
+    } finally {
+      setPasswordLoading(false);
     }
   };
 
@@ -253,6 +296,19 @@ export default function Profile({ showToast }) {
                 }`}
               >
                 GitHub Projects
+              </button>
+              <button
+                onClick={() => {
+                  setActiveTab('settings');
+                 
+                }}
+                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'settings'
+                    ? 'border-primary-600 text-primary-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                Settings
               </button>
             </nav>
           </div>
@@ -395,17 +451,17 @@ export default function Profile({ showToast }) {
                 </div>
 
                 {/* Current Association Status */}
-                {institutionStatus !== 'NONE' && (
+                {associationStatus !== 'NONE' && (
                   <div className="mb-6">
                     <div className="flex items-center justify-between">
                       <h4 className="text-sm font-medium text-gray-900">Current Association Status</h4>
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        institutionStatus === 'APPROVED' ? 'bg-green-100 text-green-800' :
-                        institutionStatus === 'PENDING' ? 'bg-yellow-100 text-yellow-800' :
+                        associationStatus === 'APPROVED' ? 'bg-green-100 text-green-800' :
+                        associationStatus === 'PENDING' ? 'bg-yellow-100 text-yellow-800' :
                         'bg-red-100 text-red-800'
                       }`}>
-                        {institutionStatus === 'APPROVED' ? 'Approved' :
-                         institutionStatus === 'PENDING' ? 'Pending Approval' :
+                        {associationStatus === 'APPROVED' ? 'Approved' :
+                         associationStatus === 'PENDING' ? 'Pending Approval' :
                          'Rejected'}
                       </span>
                     </div>
@@ -424,14 +480,14 @@ export default function Profile({ showToast }) {
                             </p>
                           </div>
                         </div>
-                        {institutionStatus === 'PENDING' && (
+                        {associationStatus === 'PENDING' && (
                           <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
                             <p className="text-sm text-yellow-800">
                               Your request is pending approval from a verifier at your institution. You'll be notified once it's reviewed.
                             </p>
                           </div>
                         )}
-                        {institutionStatus === 'REJECTED' && institutionRequest.rejectionReason && (
+                        {associationStatus === 'REJECTED' && institutionRequest.rejectionReason && (
                           <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-md">
                             <p className="text-sm text-red-800">
                               <span className="font-medium">Rejection Reason:</span> {institutionRequest.rejectionReason}
@@ -444,7 +500,7 @@ export default function Profile({ showToast }) {
                 )}
                 
                 {/* Association Form */}
-                {(institutionStatus === 'NONE' || institutionStatus === 'REJECTED') && (
+                {(associationStatus === 'NONE' || associationStatus === 'REJECTED') && (
                   <form onSubmit={handleInstitutionRequest} className="space-y-6">
                     <div>
                       <label htmlFor="role" className="block text-sm font-medium text-gray-700">
@@ -456,7 +512,7 @@ export default function Profile({ showToast }) {
                         className="form-input mt-1"
                         value={user.role || 'STUDENT'}
                         onChange={handleChange}
-                        disabled={institutionStatus === 'PENDING'}
+                        disabled={associationStatus === 'PENDING' || associationStatus === 'APPROVED'}
                       >
                         <option value="STUDENT">Student</option>
                         <option value="VERIFIER">Verifier/Faculty</option>
@@ -481,11 +537,13 @@ export default function Profile({ showToast }) {
                         placeholder="e.g., Harvard University, MIT, Google Inc."
                         value={user.institute || ''}
                         onChange={handleChange}
-                        disabled={institutionStatus === 'PENDING'}
+                        disabled={associationStatus === 'PENDING' || associationStatus === 'APPROVED'}
                         required
                       />
                       <p className="mt-2 text-sm text-gray-500">
-                        {user.role === 'STUDENT' 
+                        {associationStatus === 'APPROVED' 
+                          ? 'Your institution association has been verified and cannot be changed. Contact support if changes are needed.'
+                          : user.role === 'STUDENT' 
                           ? 'Enter the exact name of your institution. A verifier from this institution will need to approve your request.'
                           : 'Your institution helps connect you with students from the same organization.'
                         }
@@ -548,7 +606,7 @@ export default function Profile({ showToast }) {
                         type="button"
                         onClick={() => {
                           fetchUser();
-                          fetchInstitutionStatus();
+                          fetchAssociationStatus();
                         }}
                         className="btn-secondary"
                         disabled={saving}
@@ -558,7 +616,7 @@ export default function Profile({ showToast }) {
                       <button
                         type="submit"
                         className="btn-primary"
-                        disabled={saving || !user.institute || institutionStatus === 'PENDING'}
+                        disabled={saving || !user.institute || associationStatus === 'PENDING'}
                       >
                         {saving ? 'Submitting...' : 
                          user.role === 'STUDENT' ? 'Submit Request' : 'Save Association'}
@@ -568,7 +626,7 @@ export default function Profile({ showToast }) {
                 )}
 
                 {/* Approved Association Info */}
-                {institutionStatus === 'APPROVED' && (
+                {associationStatus === 'APPROVED' && (
                   <div className="space-y-6">
                     <div className="bg-green-50 border border-green-200 rounded-md p-4">
                       <div className="flex">
@@ -645,8 +703,13 @@ export default function Profile({ showToast }) {
                         <button
                           type="button"
                           onClick={() => {
-                            setInstitutionStatus('NONE');
-                            setInstitutionRequest(null);
+                            const confirmed = confirm(
+                              'Are you sure you want to request a new institution association? This will disconnect you from your current verified institution and you will need approval from a new institution. This action should only be used if you have genuinely changed institutions.'
+                            );
+                            if (confirmed) {
+                              setAssociationStatus('NONE');
+                              setInstitutionRequest(null);
+                            }
                           }}
                           className="btn-secondary text-red-600 border-red-300 hover:bg-red-50"
                         >
@@ -751,6 +814,81 @@ export default function Profile({ showToast }) {
                   </div>
                 </>
               )}
+            </div>
+          )}
+
+          {/* Settings Tab */}
+          {activeTab === 'settings' && (
+            <div className="space-y-6">
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900">Account Settings</h2>
+                <p className="text-gray-600">Manage your account security and data</p>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Password Change Section */}
+                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                  <h3 className="text-lg font-medium text-gray-900 mb-4">Change Password</h3>
+                  <form onSubmit={handlePasswordSubmit} className="space-y-4">
+                    <div>
+                      <label htmlFor="currentPassword" className="block text-sm font-medium text-gray-700 mb-1">
+                        Current Password
+                      </label>
+                      <input
+                        type="password"
+                        id="currentPassword"
+                        name="currentPassword"
+                        required
+                        className="form-input w-full"
+                        value={passwordData.currentPassword}
+                        onChange={handlePasswordChange}
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700 mb-1">
+                        New Password
+                      </label>
+                      <input
+                        type="password"
+                        id="newPassword"
+                        name="newPassword"
+                        required
+                        minLength={6}
+                        className="form-input w-full"
+                        value={passwordData.newPassword}
+                        onChange={handlePasswordChange}
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
+                        Confirm New Password
+                      </label>
+                      <input
+                        type="password"
+                        id="confirmPassword"
+                        name="confirmPassword"
+                        required
+                        minLength={6}
+                        className="form-input w-full"
+                        value={passwordData.confirmPassword}
+                        onChange={handlePasswordChange}
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      disabled={passwordLoading}
+                      className="w-full bg-primary-600 hover:bg-primary-700 disabled:bg-primary-300 disabled:cursor-not-allowed text-white font-medium py-2 px-4 rounded-md transition-colors"
+                    >
+                      {passwordLoading ? 'Changing Password...' : 'Change Password'}
+                    </button>
+                  </form>
+                </div>
+
+                {/* Data Export Section */}
+              
+              </div>
+
+             
             </div>
           )}
         </div>

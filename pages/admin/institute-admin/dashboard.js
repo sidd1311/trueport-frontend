@@ -4,6 +4,8 @@ import { instituteAdminAPI, adminAuth } from '../../../utils/adminAPI';
 import { getAuthToken, removeAuthToken } from '../../../utils/auth';
 import SingleToast from '../../../components/SingleToast';
 import AdminProtectedRoute from '../../../components/AdminProtectedRoute';
+import { parseCSV, validateCSVData, downloadCSVTemplate } from '../../../utils/csvHelper';
+import { uploadCSVToCloudinary, validateCSVFile } from '../../../utils/upload';
 
 function InstituteAdminDashboardContent() {
   const router = useRouter();
@@ -26,7 +28,11 @@ function InstituteAdminDashboardContent() {
   const [newVerifier, setNewVerifier] = useState({ name: '', email: '', password: '' });
   const [editUser, setEditUser] = useState(null);
   const [resetPasswordData, setResetPasswordData] = useState({ userId: '', newPassword: '' });
-  const [bulkJson, setBulkJson] = useState('');
+  
+  // CSV bulk import
+  const [csvFile, setCsvFile] = useState(null);
+  const [csvImportLoading, setCsvImportLoading] = useState(false);
+  const [csvResults, setCsvResults] = useState(null);
 
   useEffect(() => {
     const token = getAuthToken();
@@ -268,21 +274,117 @@ function InstituteAdminDashboardContent() {
     }
   };
 
-  // bulk import (simple JSON textarea - backend expects { users: [ ... ] })
-  const handleBulkImport = async () => {
+  // CSV Bulk Import Functions
+  const handleCsvFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const validation = validateCSVFile(file);
+      if (validation.valid) {
+        setCsvFile(file);
+        setCsvResults(null);
+        setToast({ type: 'success', message: `CSV file "${file.name}" selected successfully` });
+      } else {
+        setToast({ type: 'error', message: validation.error });
+        e.target.value = ''; // Clear the input
+      }
+    }
+  };
+
+  const handleCsvImport = async () => {
+    if (!csvFile) {
+      setToast({ type: 'error', message: 'Please select a CSV file first' });
+      return;
+    }
+
+    setCsvImportLoading(true);
     try {
-      if (!bulkJson) { setToast({ type: 'error', message: 'Paste JSON array of users' }); return; }
-      const parsed = JSON.parse(bulkJson);
-      if (!Array.isArray(parsed)) { setToast({ type: 'error', message: 'JSON must be an array' }); return; }
-      const res = await instituteAdminAPI.bulkImportUsers({ users: parsed }); // POST /users/bulk-import
-      setToast({ type: 'success', message: res?.message || 'Bulk import finished' });
-      setBulkJson('');
+      // Validate CSV file first
+      const fileValidation = validateCSVFile(csvFile);
+      if (!fileValidation.valid) {
+        setToast({ type: 'error', message: fileValidation.error });
+        return;
+      }
+
+      // Read CSV file content for client-side validation
+      const fileContent = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => resolve(e.target.result);
+        reader.onerror = reject;
+        reader.readAsText(csvFile);
+      });
+
+      // Parse and validate CSV data on client side
+      const parsedData = parseCSV(fileContent);
+      const validationErrors = validateCSVData(parsedData);
+      
+      if (validationErrors.length > 0) {
+        setToast({ 
+          type: 'error', 
+          message: `CSV validation failed:\n${validationErrors.slice(0, 3).join('\n')}${validationErrors.length > 3 ? '\n...and more' : ''}` 
+        });
+        return;
+      }
+
+      // Upload CSV to Cloudinary
+      setToast({ type: 'info', message: 'Uploading CSV file...' });
+      const uploadResult = await uploadCSVToCloudinary(csvFile);
+      
+      // Send CSV URL to backend
+      setToast({ type: 'info', message: 'Processing CSV data...' });
+      const response = await instituteAdminAPI.bulkImportCSV(uploadResult.url);
+      
+      // Store results for download
+      setCsvResults(response);
+      setToast({ 
+        type: 'success', 
+        message: `Successfully imported ${response.importedCount || 0} users. Download the CSV with generated passwords.` 
+      });
+
+      // Clear the file input
+      setCsvFile(null);
+      const fileInput = document.querySelector('input[type="file"]');
+      if (fileInput) fileInput.value = '';
+
+      // Refresh user list
       await loadUsers(usersPagination.page, usersPagination.limit, usersSearch);
       const analyticsResponse = await instituteAdminAPI.getAnalytics();
       setAnalytics(analyticsResponse?.overview || analyticsResponse || { overview: {} });
+
     } catch (err) {
-      console.error('bulkImportUsers', err);
-      setToast({ type: 'error', message: err?.response?.data?.message || 'Bulk import failed' });
+      console.error('CSV bulk import error:', err);
+      setToast({ 
+        type: 'error', 
+        message: err?.response?.data?.message || err.message || 'CSV import failed' 
+      });
+    } finally {
+      setCsvImportLoading(false);
+    }
+  };
+
+  const downloadCsvResults = () => {
+    if (!csvResults?.csvData) {
+      setToast({ type: 'error', message: 'No CSV data available for download' });
+      return;
+    }
+
+    const blob = new Blob([csvResults.csvData], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `users_with_passwords_${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  };
+
+  const downloadCsvTemplate = () => {
+    try {
+      downloadCSVTemplate();
+      setToast({ type: 'success', message: 'Template downloaded successfully' });
+    } catch (err) {
+      console.error('Download template error:', err);
+      setToast({ type: 'error', message: 'Failed to download template' });
     }
   };
 
@@ -499,14 +601,96 @@ function InstituteAdminDashboardContent() {
               </div>
             </div>
 
-            {/* Bulk import & export */}
+            {/* CSV Bulk Import */}
             <div className="bg-white shadow rounded-lg p-4">
-              <h3 className="font-medium mb-2">Bulk Import (paste JSON array)</h3>
-              <textarea rows={6} value={bulkJson} onChange={e=>setBulkJson(e.target.value)} className="form-input w-full mb-2" placeholder='[{"name":"A","email":"a@x.com","password":"123456","role":"STUDENT"}, ...]' />
-              <div className="flex space-x-2">
-                <button onClick={handleBulkImport} className="px-3 py-2 bg-indigo-600 text-white rounded">Import</button>
-                <button onClick={()=>handleExport('json')} className="px-3 py-2 bg-gray-800 text-white rounded">Export JSON</button>
-                <button onClick={()=>handleExport('csv')} className="px-3 py-2 bg-gray-800 text-white rounded">Export CSV</button>
+              <h3 className="font-medium mb-2">CSV Bulk Import Users</h3>
+              <div className="bg-blue-50 border border-blue-200 rounded-md p-3 mb-4">
+                <h4 className="text-sm font-medium text-blue-800 mb-1">CSV Format Requirements:</h4>
+                <ul className="text-sm text-blue-700 space-y-1">
+                  <li>• <strong>Required columns:</strong> name, email</li>
+                  <li>• <strong>Optional column:</strong> role (STUDENT or VERIFIER - defaults to STUDENT)</li>
+                  <li>• <strong>Passwords:</strong> Generated automatically by the system</li>
+                  <li>• <strong>First row:</strong> Must contain column headers</li>
+                  <li>• <strong>File size:</strong> Maximum 2MB</li>
+                  <li>• <strong>Upload:</strong> Files are securely uploaded to cloud storage</li>
+                </ul>
+              </div>
+              
+              <div className="space-y-4">
+                {/* Template Download */}
+                <div className="flex items-center space-x-2">
+                  <button 
+                    onClick={downloadCsvTemplate}
+                    className="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                  >
+                    Download Template CSV
+                  </button>
+                  <span className="text-sm text-gray-500">Get the correct CSV format</span>
+                </div>
+
+                {/* File Upload */}
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="file"
+                    accept=".csv"
+                    onChange={handleCsvFileChange}
+                    className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100"
+                  />
+                  {csvFile && (
+                    <span className="text-sm text-green-600">
+                      ✓ {csvFile.name}
+                    </span>
+                  )}
+                </div>
+
+                {/* Import Button */}
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={handleCsvImport}
+                    disabled={!csvFile || csvImportLoading}
+                    className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center space-x-2"
+                  >
+                    {csvImportLoading ? (
+                      <>
+                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span>Processing...</span>
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                        </svg>
+                        <span>Import CSV</span>
+                      </>
+                    )}
+                  </button>
+                  
+                  {csvResults && (
+                    <button
+                      onClick={downloadCsvResults}
+                      className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors"
+                    >
+                      📥 Download Results with Passwords
+                    </button>
+                  )}
+                </div>
+
+                {/* Results Summary */}
+                {csvResults && (
+                  <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-md">
+                    <h4 className="text-sm font-medium text-green-800">Import Results:</h4>
+                    <ul className="text-sm text-green-700 mt-1">
+                      <li>• Successfully imported: {csvResults.importedCount || 0} users</li>
+                      <li>• Failed imports: {csvResults.failedCount || 0} users</li>
+                      {csvResults.failedUsers && csvResults.failedUsers.length > 0 && (
+                        <li>• Failed emails: {csvResults.failedUsers.map(u => u.email).join(', ')}</li>
+                      )}
+                    </ul>
+                  </div>
+                )}
               </div>
             </div>
           </div>
