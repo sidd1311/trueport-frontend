@@ -27,6 +27,14 @@ export default function Profile({ showToast }) {
   const [institutionRequest, setInstitutionRequest] = useState(null);
   const [institutions, setInstitutions] = useState([]);
   
+  // Portfolio visibility state
+  const [portfolioItems, setPortfolioItems] = useState({
+    experiences: [],
+    education: [],
+    projects: []
+  });
+  const [portfolioLoading, setPortfolioLoading] = useState(false);
+  
   // Password change state
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
@@ -35,12 +43,24 @@ export default function Profile({ showToast }) {
   });
   const [passwordLoading, setPasswordLoading] = useState(false);
 
+  // Contact info state
+  const [contactInfo, setContactInfo] = useState({
+    phone: '',
+    linkedinUrl: '',
+    emailVisible: true,
+    phoneVisible: false,
+    linkedinVisible: true,
+    githubVisible: true
+  });
+  const [contactLoading, setContactLoading] = useState(false);
+
   useEffect(() => {
     fetchUser();
     fetchEducation();
     fetchProjects();
     fetchAssociationStatus();
     fetchInstitutions();
+    fetchContactInfo();
   }, []);
 
   const fetchUser = async () => {
@@ -105,6 +125,134 @@ export default function Profile({ showToast }) {
     } catch (error) {
       console.error('Failed to fetch institutions:', error);
       setInstitutions([]);
+    }
+  };
+
+  const fetchPortfolioItems = async () => {
+    try {
+      setPortfolioLoading(true);
+      const response = await userAPI.getPortfolioItems();
+      setPortfolioItems({
+        experiences: response.experiences || [],
+        education: response.education || [],
+        projects: response.projects || []
+      });
+    } catch (error) {
+      console.error('Failed to fetch portfolio items:', error);
+      // Fallback: use existing data from profile
+      setPortfolioItems({
+        experiences: Array.isArray(experiences) ? experiences : [],
+        education: Array.isArray(education) ? education : [],
+        projects: Array.isArray(projects) ? projects : []
+      });
+      showToast('Using cached portfolio data', 'info');
+    } finally {
+      setPortfolioLoading(false);
+    }
+  };
+
+const fetchContactInfo = async () => {
+  try {
+    const res = await userAPI.getContactInfo(); // returns response.data from axios
+    // backend returns: { contactInfo: { email, phone, linkedinUrl, githubUsername }, contactVisibility: { email, phone, linkedinUrl, githubUsername } }
+    const data = res?.contactInfo ? res : (res?.data ? res.data : res); // defensive
+    const ci = data.contactInfo || {};
+    console.log(ci)
+    const vis = data.contactVisibility || {};
+
+    setContactInfo({
+      phone: ci.phone || '',
+      linkedinUrl: ci.linkedinUrl || '',
+      emailVisible: vis.email !== undefined ? vis.email : true,
+      phoneVisible: vis.phone !== undefined ? vis.phone : false,
+      linkedinVisible: vis.linkedinUrl !== undefined ? vis.linkedinUrl : true,
+      githubVisible: vis.githubUsername !== undefined ? vis.githubUsername : true
+    });
+  } catch (err) {
+    console.error('Failed to fetch contact info:', err);
+  }
+};
+  const handleVisibilityToggle = async (itemType, itemId, currentVisibility) => {
+    try {
+      const newVisibility = !currentVisibility;
+      await userAPI.updateItemVisibility(itemType, itemId, newVisibility);
+      
+      // Update local state
+      setPortfolioItems(prev => ({
+        ...prev,
+        [itemType]: Array.isArray(prev[itemType]) ? prev[itemType].map(item => 
+          (item.id || item._id) === itemId 
+            ? { ...item, isPublic: newVisibility }
+            : item
+        ) : []
+      }));
+      
+      showToast(`Item ${newVisibility ? 'shown' : 'hidden'} from public portfolio`, 'success');
+    } catch (error) {
+      console.error('Failed to update visibility:', error);
+      showToast('Failed to update visibility', 'error');
+    }
+  };
+
+  const handleContactInfoChange = (e) => {
+    setContactInfo({
+      ...contactInfo,
+      [e.target.name]: e.target.value,
+    });
+  };
+
+  const handleContactVisibilityToggle = async (field) => {
+    try {
+      const newVisibility = !contactInfo[field];
+      setContactLoading(true);
+      
+      // Map frontend field names to backend field names
+      const fieldMapping = {
+        'emailVisible': 'email',
+        'phoneVisible': 'phone', 
+        'linkedinVisible': 'linkedinUrl',
+        'githubVisible': 'githubUsername'
+      };
+      
+      const backendFieldName = fieldMapping[field];
+      if (!backendFieldName) {
+        throw new Error(`Invalid field: ${field}`);
+      }
+      
+      // Update visibility using the dedicated contact visibility API
+      const visibilityUpdate = {
+        [backendFieldName]: newVisibility
+      };
+      
+      await userAPI.updateContactVisibility(visibilityUpdate);
+      
+      // Update local state
+      const updatedContactInfo = {
+        ...contactInfo,
+        [field]: newVisibility
+      };
+      setContactInfo(updatedContactInfo);
+      
+      showToast(`${field.replace('Visible', '')} ${newVisibility ? 'shown' : 'hidden'} on public portfolio`, 'success');
+    } catch (error) {
+      console.error('Failed to update contact visibility:', error);
+      showToast('Failed to update visibility', 'error');
+    } finally {
+      setContactLoading(false);
+    }
+  };
+
+  const handleContactInfoSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      setContactLoading(true);
+      await userAPI.updateContactInfo(contactInfo);
+      showToast('Contact information updated successfully', 'success');
+    } catch (error) {
+      console.error('Failed to update contact info:', error);
+      showToast('Failed to update contact information', 'error');
+    } finally {
+      setContactLoading(false);
     }
   };
 
@@ -289,25 +437,21 @@ export default function Profile({ showToast }) {
               >
                 Institution
               </button>
+            
               <button
-                onClick={() => setActiveTab('education')}
+                onClick={() => {
+                  setActiveTab('portfolio');
+                  if (!portfolioItems?.experiences?.length && !portfolioItems?.education?.length && !portfolioItems?.projects?.length) {
+                    fetchPortfolioItems();
+                  }
+                }}
                 className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'education'
+                  activeTab === 'portfolio'
                     ? 'border-primary-600 text-primary-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
-                Education
-              </button>
-              <button
-                onClick={() => setActiveTab('projects')}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'projects'
-                    ? 'border-primary-600 text-primary-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                GitHub Projects
+                Portfolio Visibility
               </button>
               <button
                 onClick={() => {
@@ -419,6 +563,165 @@ export default function Profile({ showToast }) {
                       disabled={saving}
                     >
                       {saving ? 'Saving...' : 'Save Changes'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+
+              {/* Contact Information */}
+              <div className="mt-8 bg-white rounded-lg shadow-sm border border-gray-200">
+                <form onSubmit={handleContactInfoSubmit} className="p-6 space-y-6">
+                  <div>
+                    <h3 className="text-lg font-medium text-gray-900 mb-4">Contact Information</h3>
+                    <p className="text-sm text-gray-600 mb-6">Manage your contact details and control their visibility on your public portfolio.</p>
+                  </div>
+
+                  <div>
+                    <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
+                      Phone Number
+                    </label>
+                    <input
+                      type="tel"
+                      id="phone"
+                      name="phone"
+                      className="form-input mt-1"
+                      placeholder="+1-234-567-8900"
+                      value={contactInfo.phone}
+                      onChange={handleContactInfoChange}
+                    />
+                    <div className="mt-2 flex items-center justify-between">
+                      <p className="text-sm text-gray-500">Your phone number for professional contacts</p>
+                      <label className="flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={contactInfo.phoneVisible}
+                          onChange={() => handleContactVisibilityToggle('phoneVisible')}
+                          className="sr-only"
+                          disabled={contactLoading}
+                        />
+                        <div className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                          contactInfo.phoneVisible ? 'bg-primary-600' : 'bg-gray-200'
+                        }`}>
+                          <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                            contactInfo.phoneVisible ? 'translate-x-6' : 'translate-x-1'
+                          }`} />
+                        </div>
+                        <span className="ml-2 text-sm text-gray-700">
+                          {contactInfo.phoneVisible ? 'Visible' : 'Hidden'}
+                        </span>
+                      </label>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label htmlFor="linkedinUrl" className="block text-sm font-medium text-gray-700">
+                      LinkedIn Profile
+                    </label>
+                    <input
+                      type="url"
+                      id="linkedinUrl"
+                      name="linkedinUrl"
+                      className="form-input mt-1"
+                      placeholder="https://linkedin.com/in/username"
+                      value={contactInfo.linkedinUrl}
+                      onChange={handleContactInfoChange}
+                    />
+                    <div className="mt-2 flex items-center justify-between">
+                      <p className="text-sm text-gray-500">Your LinkedIn profile URL</p>
+                      <label className="flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={contactInfo.linkedinVisible}
+                          onChange={() => handleContactVisibilityToggle('linkedinVisible')}
+                          className="sr-only"
+                          disabled={contactLoading}
+                        />
+                        <div className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                          contactInfo.linkedinVisible ? 'bg-primary-600' : 'bg-gray-200'
+                        }`}>
+                          <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                            contactInfo.linkedinVisible ? 'translate-x-6' : 'translate-x-1'
+                          }`} />
+                        </div>
+                        <span className="ml-2 text-sm text-gray-700">
+                          {contactInfo.linkedinVisible ? 'Visible' : 'Hidden'}
+                        </span>
+                      </label>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h4 className="text-md font-medium text-gray-900 mb-3">Profile Visibility Settings</h4>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div>
+                          <p className="font-medium text-gray-900">Email Address</p>
+                          <p className="text-sm text-gray-600">{user.email}</p>
+                        </div>
+                        <label className="flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={contactInfo.emailVisible}
+                            onChange={() => handleContactVisibilityToggle('emailVisible')}
+                            className="sr-only"
+                            disabled={contactLoading}
+                          />
+                          <div className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                            contactInfo.emailVisible ? 'bg-primary-600' : 'bg-gray-200'
+                          }`}>
+                            <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                              contactInfo.emailVisible ? 'translate-x-6' : 'translate-x-1'
+                            }`} />
+                          </div>
+                          <span className="ml-2 text-sm text-gray-700">
+                            {contactInfo.emailVisible ? 'Visible' : 'Hidden'}
+                          </span>
+                        </label>
+                      </div>
+
+                      <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div>
+                          <p className="font-medium text-gray-900">GitHub Profile</p>
+                          <p className="text-sm text-gray-600">{user.githubUsername ? `github.com/${user.githubUsername}` : 'Not set'}</p>
+                        </div>
+                        <label className="flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={contactInfo.githubVisible}
+                            onChange={() => handleContactVisibilityToggle('githubVisible')}
+                            className="sr-only"
+                            disabled={contactLoading || !user.githubUsername}
+                          />
+                          <div className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                            contactInfo.githubVisible && user.githubUsername ? 'bg-primary-600' : 'bg-gray-200'
+                          }`}>
+                            <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                              contactInfo.githubVisible && user.githubUsername ? 'translate-x-6' : 'translate-x-1'
+                            }`} />
+                          </div>
+                          <span className="ml-2 text-sm text-gray-700">
+                            {contactInfo.githubVisible && user.githubUsername ? 'Visible' : 'Hidden'}
+                          </span>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
+                    <button
+                      type="button"
+                      onClick={fetchContactInfo}
+                      className="btn-secondary"
+                      disabled={contactLoading}
+                    >
+                      Reset
+                    </button>
+                    <button
+                      type="submit"
+                      className="btn-primary"
+                      disabled={contactLoading}
+                    >
+                      {contactLoading ? 'Saving...' : 'Save Contact Info'}
                     </button>
                   </div>
                 </form>
@@ -740,96 +1043,221 @@ export default function Profile({ showToast }) {
             </div>
           )}
 
-          {/* Education Tab */}
-          {activeTab === 'education' && (
+     
+         
+          {/* Portfolio Visibility Tab */}
+          {activeTab === 'portfolio' && (
             <div className="space-y-6">
-              <div className="flex justify-between items-center">
-                <div>
-                  <h2 className="text-xl font-semibold text-gray-900">Education</h2>
-                  <p className="text-gray-600">Manage your educational background</p>
-                </div>
-                <Link href="/education/new" className="btn-primary">
-                  Add Education
-                </Link>
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900">Portfolio Visibility</h2>
+                <p className="text-gray-600">Control what appears on your public portfolio. Only verified items can be made visible.</p>
               </div>
 
-              {education.length === 0 ? (
-                <div className="text-center py-12 bg-white rounded-lg shadow-sm border border-gray-200">
-                  <svg className="mx-auto h-24 w-24 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                  </svg>
-                  <h3 className="mt-4 text-lg font-medium text-gray-900">No education entries</h3>
-                  <p className="mt-2 text-gray-600">Get started by adding your educational background.</p>
-                  <Link href="/education/new" className="mt-4 btn-primary inline-flex items-center">
-                    Add Education Entry
-                  </Link>
+              {portfolioLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
                 </div>
               ) : (
-                <>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {education.map((edu) => (
-                      <EducationCard
-                        key={edu.id}
-                        education={edu}
-                        onEdit={() => router.push(`/education/edit/${edu.id}`)}
-                        onDelete={() => handleDeleteEducation(edu.id)}
-                        onRequestVerification={() => handleRequestEducationVerification(edu.id)}
-                      />
-                    ))}
-                  </div>
-                  <div className="text-center">
-                    <Link href="/education" className="text-primary-600 hover:text-primary-700 font-medium">
-                      View All Education Entries →
-                    </Link>
-                  </div>
-                </>
-              )}
-            </div>
-          )}
+                <div className="space-y-8">
+                  {/* Experiences Section */}
+                  {portfolioItems?.experiences?.length > 0 && (
+                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                      <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
+                        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 012 2v6a2 2 0 01-2 2H8a2 2 0 01-2-2V8a2 2 0 012-2h8zM8 14v.01M12 14v.01M16 14v.01" />
+                        </svg>
+                        Work Experiences ({portfolioItems?.experiences?.length || 0})
+                      </h3>
+                      <div className="space-y-4">
+                        {(portfolioItems?.experiences || []).map((experience) => (
+                          <div key={experience.id || experience._id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                            <div className="flex-1">
+                              <h4 className="font-medium text-gray-900">{experience.role}</h4>
+                              <p className="text-sm text-gray-600">{experience.title}</p>
+                              <div className="flex items-center mt-1">
+                                {experience.verified ? (
+                                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
+                                    <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                    </svg>
+                                    Verified
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-800">
+                                    Pending Verification
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            <div className="ml-4">
+                              {experience.verified ? (
+                                <label className="flex items-center cursor-pointer">
+                                  <input
+                                    type="checkbox"
+                                    checked={experience.isPublic || false}
+                                    onChange={() => handleVisibilityToggle('experience', experience.id || experience._id, experience.isPublic || false)}
+                                    className="sr-only"
+                                  />
+                                  <div className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                                    experience.isPublic ? 'bg-primary-600' : 'bg-gray-200'
+                                  }`}>
+                                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                                      experience.isPublic ? 'translate-x-6' : 'translate-x-1'
+                                    }`} />
+                                  </div>
+                                  <span className="ml-2 text-sm text-gray-700">
+                                    {experience.isPublic ? 'Visible' : 'Hidden'}
+                                  </span>
+                                </label>
+                              ) : (
+                                <span className="text-sm text-gray-400">Only verified items can be shown</span>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
-          {/* Projects Tab */}
-          {activeTab === 'projects' && (
-            <div className="space-y-6">
-              <div className="flex justify-between items-center">
-                <div>
-                  <h2 className="text-xl font-semibold text-gray-900">GitHub Projects</h2>
-                  <p className="text-gray-600">Showcase your coding projects and learnings</p>
-                </div>
-                <Link href="/projects/new" className="btn-primary">
-                  Add Project
-                </Link>
-              </div>
+                  {/* Education Section */}
+                  {portfolioItems?.education?.length > 0 && (
+                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                      <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
+                        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l9-5-9-5-9 5 9 5z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
+                        </svg>
+                        Education ({portfolioItems?.education?.length || 0})
+                      </h3>
+                      <div className="space-y-4">
+                        {(portfolioItems?.education || []).map((edu) => (
+                          <div key={edu.id || edu._id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                            <div className="flex-1">
+                              <h4 className="font-medium text-gray-900">{edu.courseName}</h4>
+                              <p className="text-sm text-gray-600">{edu.schoolOrCollege}</p>
+                              <p className="text-sm text-gray-500">{edu.courseType} • {edu.passingYear}</p>
+                              <div className="flex items-center mt-1">
+                                {edu.verified ? (
+                                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
+                                    <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                    </svg>
+                                    Verified
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-800">
+                                    Pending Verification
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            <div className="ml-4">
+                              {edu.verified ? (
+                                <label className="flex items-center cursor-pointer">
+                                  <input
+                                    type="checkbox"
+                                    checked={edu.isPublic || false}
+                                    onChange={() => handleVisibilityToggle('education', edu.id || edu._id, edu.isPublic || false)}
+                                    className="sr-only"
+                                  />
+                                  <div className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                                    edu.isPublic ? 'bg-primary-600' : 'bg-gray-200'
+                                  }`}>
+                                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                                      edu.isPublic ? 'translate-x-6' : 'translate-x-1'
+                                    }`} />
+                                  </div>
+                                  <span className="ml-2 text-sm text-gray-700">
+                                    {edu.isPublic ? 'Visible' : 'Hidden'}
+                                  </span>
+                                </label>
+                              ) : (
+                                <span className="text-sm text-gray-400">Only verified items can be shown</span>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
-              {projects.length === 0 ? (
-                <div className="text-center py-12 bg-white rounded-lg shadow-sm border border-gray-200">
-                  <svg className="mx-auto h-24 w-24 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                  </svg>
-                  <h3 className="mt-4 text-lg font-medium text-gray-900">No projects added</h3>
-                  <p className="mt-2 text-gray-600">Share your GitHub repositories and what you learned building them.</p>
-                  <Link href="/projects/new" className="mt-4 btn-primary inline-flex items-center">
-                    Add GitHub Project
-                  </Link>
+                  {/* Projects Section */}
+                  {portfolioItems?.projects?.length > 0 && (
+                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                      <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
+                        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                        </svg>
+                        GitHub Projects ({portfolioItems?.projects?.length || 0})
+                      </h3>
+                      <div className="space-y-4">
+                        {(portfolioItems?.projects || []).map((project) => (
+                          <div key={project.id || project._id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                            <div className="flex-1">
+                              <h4 className="font-medium text-gray-900">{project.projectName || project.name}</h4>
+                              <p className="text-sm text-gray-600">{project.description}</p>
+                              <div className="flex items-center mt-1">
+                                {project.verified ? (
+                                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
+                                    <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                    </svg>
+                                    Verified
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-800">
+                                    Pending Verification
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            <div className="ml-4">
+                              {project.verified ? (
+                                <label className="flex items-center cursor-pointer">
+                                  <input
+                                    type="checkbox"
+                                    checked={project.isPublic || false}
+                                    onChange={() => handleVisibilityToggle('project', project.id || project._id, project.isPublic || false)}
+                                    className="sr-only"
+                                  />
+                                  <div className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                                    project.isPublic ? 'bg-primary-600' : 'bg-gray-200'
+                                  }`}>
+                                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                                      project.isPublic ? 'translate-x-6' : 'translate-x-1'
+                                    }`} />
+                                  </div>
+                                  <span className="ml-2 text-sm text-gray-700">
+                                    {project.isPublic ? 'Visible' : 'Hidden'}
+                                  </span>
+                                </label>
+                              ) : (
+                                <span className="text-sm text-gray-400">Only verified items can be shown</span>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Empty State */}
+                  {(!portfolioItems?.experiences?.length && !portfolioItems?.education?.length && !portfolioItems?.projects?.length) && (
+                    <div className="text-center py-12 bg-white rounded-lg shadow-sm border border-gray-200">
+                      <svg className="mx-auto h-24 w-24 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      </svg>
+                      <h3 className="mt-4 text-lg font-medium text-gray-900">No items to display</h3>
+                      <p className="mt-2 text-gray-600">Add some experiences, education, or projects first, then get them verified to control their visibility.</p>
+                      <div className="mt-6 flex justify-center space-x-4">
+                        <Link href="/experiences/new" className="btn-primary">Add Experience</Link>
+                        <Link href="/education/new" className="btn-secondary">Add Education</Link>
+                        <Link href="/projects/new" className="btn-secondary">Add Project</Link>
+                      </div>
+                    </div>
+                  )}
                 </div>
-              ) : (
-                <>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {projects.map((project) => (
-                      <GitHubProjectCard
-                        key={project.id}
-                        project={project}
-                        onEdit={() => router.push(`/projects/edit/${project.id}`)}
-                        onDelete={() => handleDeleteProject(project.id)}
-                        onRequestVerification={() => handleRequestProjectVerification(project.id)}
-                      />
-                    ))}
-                  </div>
-                  <div className="text-center">
-                    <Link href="/projects" className="text-primary-600 hover:text-primary-700 font-medium">
-                      View All Projects →
-                    </Link>
-                  </div>
-                </>
               )}
             </div>
           )}

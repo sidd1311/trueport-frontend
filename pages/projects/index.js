@@ -265,6 +265,7 @@ export default function GitHubProjects({ showToast }) {
                   <GitHubProjectCard
                     key={project._id}
                     project={project}
+                    showActions={true}
                     onEdit={() => router.push(`/projects/edit/${project._id}`)}
                     onDelete={() => handleDelete(project._id)}
                     onRequestVerification={() => handleRequestVerification(project._id)}
