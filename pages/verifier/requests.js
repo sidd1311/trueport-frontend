@@ -10,7 +10,6 @@ export default function VerifierRequests({ showToast }) {
   const [user, setUser] = useState(null);
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState('PENDING');
   const [requestTypeFilter, setRequestTypeFilter] = useState('ALL');
 
   useEffect(() => {
@@ -21,14 +20,14 @@ export default function VerifierRequests({ showToast }) {
     }
     setUser(userData);
     fetchRequests();
-  }, [router, filter, requestTypeFilter]);
+  }, [router, requestTypeFilter]);
 
   const fetchRequests = async () => {
     try {
       setLoading(true);
       const [verificationResponse, institutionResponse] = await Promise.all([
-        api.get(`/verifier/requests?status=${filter}`),
-        api.get(`/associations/pending?status=${filter}`)
+        api.get('/verifier/requests'),
+        api.get('/associations/pending')
       ]);
       
       const verificationRequests = (verificationResponse.data.requests || []).map(req => ({
@@ -36,14 +35,20 @@ export default function VerifierRequests({ showToast }) {
         requestType: 'VERIFICATION'
       }));
       
-      const institutionRequests = (institutionResponse.data.requests || []).map(req => ({
+      const institutionRequests = (institutionResponse.data.requests || institutionResponse.data || []).map(req => ({
         ...req,
+        id: req._id || req.id,
         requestType: 'INSTITUTION',
         type: 'INSTITUTION',
         title: `Institution Association: ${req.institute}`,
-        description: `Role: ${req.role}`
+        description: `Role: ${req.requestedRole}`,
+        student: {
+          name: req.studentName,
+          email: req.studentEmail
+        },
+        requestedAt: req.createdAt
       }));
-      
+      console.log(institutionRequests)
       let allRequests = [...verificationRequests, ...institutionRequests];
       
       // Filter by request type if not 'ALL'
@@ -88,24 +93,30 @@ export default function VerifierRequests({ showToast }) {
 
   const handleApproveInstitution = async (requestId) => {
     try {
-      await api.post(`/associations/approve-institution/${requestId}`);
+      await api.put(`/associations/${requestId}/respond`, {
+        action: 'approve',
+        response: ''
+      });
       showToast?.('Institution association approved successfully', 'success');
       fetchRequests();
     } catch (error) {
       console.error('Failed to approve institution association:', error);
-      showToast?.('Failed to approve institution association', 'error');
+      showToast?.(error.response?.data?.message || 'Failed to approve institution association', 'error');
     }
   };
 
   const handleRejectInstitution = async (requestId) => {
     const reason = prompt('Please provide a reason for rejection (optional):');
     try {
-      await api.post(`/verifier/reject-institution/${requestId}`, { reason: reason || '' });
+      await api.put(`/associations/${requestId}/respond`, {
+        action: 'reject',
+        response: reason || ''
+      });
       showToast?.('Institution association rejected', 'success');
       fetchRequests();
     } catch (error) {
       console.error('Failed to reject institution association:', error);
-      showToast?.('Failed to reject institution association', 'error');
+      showToast?.(error.response?.data?.message || 'Failed to reject institution association', 'error');
     }
   };
 
@@ -165,22 +176,6 @@ export default function VerifierRequests({ showToast }) {
           {/* Filters */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
             <div className="flex space-x-4">
-              <div>
-                <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">
-                  Status Filter
-                </label>
-                <select
-                  id="status"
-                  className="form-input"
-                  value={filter}
-                  onChange={(e) => setFilter(e.target.value)}
-                >
-                  <option value="PENDING">Pending</option>
-                  <option value="APPROVED">Approved</option>
-                  <option value="REJECTED">Rejected</option>
-                  <option value="ALL">All</option>
-                </select>
-              </div>
               <div>
                 <label htmlFor="requestType" className="block text-sm font-medium text-gray-700 mb-1">
                   Request Type
@@ -260,7 +255,7 @@ export default function VerifierRequests({ showToast }) {
                           {getStatusBadge(request.status)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {new Date(request.createdAt).toLocaleDateString()}
+                          {new Date(request.requestedAt).toLocaleDateString()}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                           <div className="flex space-x-2">
@@ -331,14 +326,9 @@ export default function VerifierRequests({ showToast }) {
                     'institution association requests'} found
               </h3>
               <p className="mt-1 text-sm text-gray-500">
-                {filter === 'PENDING' 
-                  ? `No pending ${requestTypeFilter === 'ALL' ? 'requests' : 
-                      requestTypeFilter === 'VERIFICATION' ? 'verification requests' : 
-                      'institution association requests'} at the moment.`
-                  : `No ${filter.toLowerCase()} ${requestTypeFilter === 'ALL' ? 'requests' : 
-                      requestTypeFilter === 'VERIFICATION' ? 'verification requests' : 
-                      'institution association requests'} found.`
-                }
+                No {requestTypeFilter === 'ALL' ? 'requests' : 
+                    requestTypeFilter === 'VERIFICATION' ? 'verification requests' : 
+                    'institution association requests'} at the moment.
               </p>
             </div>
           )}

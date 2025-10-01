@@ -25,6 +25,7 @@ export default function Profile({ showToast }) {
   const [activeTab, setActiveTab] = useState('profile');
   const [associationStatus, setAssociationStatus] = useState('NONE'); // NONE, PENDING, APPROVED, REJECTED
   const [institutionRequest, setInstitutionRequest] = useState(null);
+  const [institutions, setInstitutions] = useState([]);
   
   // Password change state
   const [passwordData, setPasswordData] = useState({
@@ -39,6 +40,7 @@ export default function Profile({ showToast }) {
     fetchEducation();
     fetchProjects();
     fetchAssociationStatus();
+    fetchInstitutions();
   }, []);
 
   const fetchUser = async () => {
@@ -93,6 +95,16 @@ export default function Profile({ showToast }) {
       console.error('Failed to fetch association status:', error);
       // If endpoint doesn't exist yet, assume NONE status
       setAssociationStatus('NONE');
+    }
+  };
+
+  const fetchInstitutions = async () => {
+    try {
+      const response = await userAPI.getInstitutions();
+      setInstitutions(response.institutions || response.data?.institutions || response || []);
+    } catch (error) {
+      console.error('Failed to fetch institutions:', error);
+      setInstitutions([]);
     }
   };
 
@@ -529,23 +541,28 @@ export default function Profile({ showToast }) {
                       <label htmlFor="institute" className="block text-sm font-medium text-gray-700">
                         Institution/Organization
                       </label>
-                      <input
-                        type="text"
+                      <select
                         id="institute"
                         name="institute"
                         className="form-input mt-1"
-                        placeholder="e.g., Harvard University, MIT, Google Inc."
                         value={user.institute || ''}
                         onChange={handleChange}
                         disabled={associationStatus === 'PENDING' || associationStatus === 'APPROVED'}
                         required
-                      />
+                      >
+                        <option value="">Select an institution...</option>
+                        {institutions.map((institution) => (
+                          <option key={institution._id || institution.id} value={institution.name || institution.displayName}>
+                            {institution.displayName || institution.name}
+                          </option>
+                        ))}
+                      </select>
                       <p className="mt-2 text-sm text-gray-500">
                         {associationStatus === 'APPROVED' 
                           ? 'Your institution association has been verified and cannot be changed. Contact support if changes are needed.'
                           : user.role === 'STUDENT' 
-                          ? 'Enter the exact name of your institution. A verifier from this institution will need to approve your request.'
-                          : 'Your institution helps connect you with students from the same organization.'
+                          ? 'Select your institution from the list. A verifier from this institution will need to approve your request.'
+                          : 'Select your institution to connect with students from the same organization.'
                         }
                       </p>
                     </div>

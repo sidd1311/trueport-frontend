@@ -22,7 +22,11 @@ export const userAPI = {
     return response.data;
   },
 
-
+  // Institutions
+  getInstitutions: async () => {
+    const response = await api.get('/users/institutions');
+    return response.data;
+  },
 };
 
 export default userAPI;
