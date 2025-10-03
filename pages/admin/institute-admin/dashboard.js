@@ -405,28 +405,28 @@ function InstituteAdminDashboardContent() {
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white shadow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-4">
-              <div className="w-8 h-8 bg-gradient-to-r from-green-600 to-blue-600 rounded-lg flex items-center justify-center">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center py-4 sm:h-16 space-y-3 sm:space-y-0">
+            <div className="flex items-center space-x-3 sm:space-x-4">
+              <div className="w-8 h-8 bg-gradient-to-r from-green-600 to-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
                 <span className="text-white font-bold text-sm">T</span>
               </div>
               <div>
-                <h1 className="text-xl font-semibold text-gray-900">Institute Admin Dashboard</h1>
-                <p className="text-sm text-gray-500">{institution?.displayName || institution?.name || ''}</p>
+                <h1 className="text-lg sm:text-xl font-semibold text-gray-900 truncate">Institute Admin Dashboard</h1>
+                <p className="text-xs sm:text-sm text-gray-500 truncate">{institution?.displayName || institution?.name || ''}</p>
               </div>
             </div>
 
-            <div className="flex items-center space-x-4">
-              <span className="text-sm text-gray-700">Welcome, {user?.name}</span>
-              <button onClick={handleLogout} className="text-sm text-red-600 hover:text-red-500">Logout</button>
+            <div className="flex items-center space-x-2 sm:space-x-4">
+              <span className="text-xs sm:text-sm text-gray-700 truncate max-w-[150px] sm:max-w-none">Welcome, {user?.name}</span>
+              <button onClick={handleLogout} className="text-xs sm:text-sm text-red-600 hover:text-red-500 whitespace-nowrap">Logout</button>
             </div>
           </div>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <div className="border-b border-gray-200 mb-6">
-          <nav className="-mb-px flex space-x-8">
+      <main className="max-w-7xl mx-auto py-4 sm:py-6 px-4 sm:px-6 lg:px-8">
+        <div className="border-b border-gray-200 mb-6 overflow-x-auto">
+          <nav className="-mb-px flex space-x-4 sm:space-x-8 min-w-max sm:min-w-0">
             {[
               { id: 'overview', name: 'Overview' },
               { id: 'users', name: 'Users' },
@@ -447,22 +447,22 @@ function InstituteAdminDashboardContent() {
         {/* Overview */}
         {activeTab === 'overview' && analytics && (
           <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <div className="bg-white shadow rounded-lg p-6">
-                <p className="text-sm font-medium text-gray-500">Total Users</p>
-                <p className="text-2xl font-semibold text-gray-900">{analytics.overview?.totalUsers || 0}</p>
+            <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
+              <div className="bg-white shadow rounded-lg p-3 sm:p-6">
+                <p className="text-xs sm:text-sm font-medium text-gray-500">Total Users</p>
+                <p className="text-lg sm:text-2xl font-semibold text-gray-900">{analytics.overview?.totalUsers || 0}</p>
               </div>
-              <div className="bg-white shadow rounded-lg p-6">
-                <p className="text-sm font-medium text-gray-500">Students</p>
-                <p className="text-2xl font-semibold text-gray-900">{analytics.overview?.totalStudents || 0}</p>
+              <div className="bg-white shadow rounded-lg p-3 sm:p-6">
+                <p className="text-xs sm:text-sm font-medium text-gray-500">Students</p>
+                <p className="text-lg sm:text-2xl font-semibold text-gray-900">{analytics.overview?.totalStudents || 0}</p>
               </div>
-              <div className="bg-white shadow rounded-lg p-6">
-                <p className="text-sm font-medium text-gray-500">Verifiers</p>
-                <p className="text-2xl font-semibold text-gray-900">{analytics.overview?.totalVerifiers || 0}</p>
+              <div className="bg-white shadow rounded-lg p-3 sm:p-6">
+                <p className="text-xs sm:text-sm font-medium text-gray-500">Verifiers</p>
+                <p className="text-lg sm:text-2xl font-semibold text-gray-900">{analytics.overview?.totalVerifiers || 0}</p>
               </div>
-              <div className="bg-white shadow rounded-lg p-6">
-                <p className="text-sm font-medium text-gray-500">Pending Requests</p>
-                <p className="text-2xl font-semibold text-gray-900">{analytics.overview?.pendingAssociations || 0}</p>
+              <div className="bg-white shadow rounded-lg p-3 sm:p-6">
+                <p className="text-xs sm:text-sm font-medium text-gray-500">Pending Requests</p>
+                <p className="text-lg sm:text-2xl font-semibold text-gray-900">{analytics.overview?.pendingAssociations || 0}</p>
               </div>
             </div>
 
@@ -500,64 +500,64 @@ function InstituteAdminDashboardContent() {
         {/* Users */}
         {activeTab === 'users' && (
           <div className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h2 className="text-2xl font-bold text-gray-900">Users</h2>
-              <div className="flex items-center space-x-2">
-                <input value={usersSearch} onChange={onUsersSearch} placeholder="Search name/email/github" className="form-input px-3 py-2" />
-                <button onClick={() => loadUsers(1, usersPagination.limit, usersSearch)} className="px-3 py-2 bg-primary-600 text-white rounded">Search</button>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-3 sm:space-y-0">
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Users</h2>
+              <div className="flex items-center space-x-2 w-full sm:w-auto">
+                <input value={usersSearch} onChange={onUsersSearch} placeholder="Search..." className="form-input px-3 py-2 text-sm flex-1 sm:flex-none sm:w-48" />
+                <button onClick={() => loadUsers(1, usersPagination.limit, usersSearch)} className="px-3 py-2 bg-primary-600 text-white rounded text-sm whitespace-nowrap">Search</button>
               </div>
             </div>
 
             {/* create sections */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <form onSubmit={handleCreateStudent} className="bg-white shadow rounded-lg p-4">
-                <h3 className="font-medium mb-2">Add Student</h3>
-                <input className="form-input w-full mb-2" placeholder="Name" value={newStudent.name} onChange={e=>setNewStudent(prev=>({...prev,name:e.target.value}))} />
-                <input className="form-input w-full mb-2" placeholder="Email" value={newStudent.email} onChange={e=>setNewStudent(prev=>({...prev,email:e.target.value}))} />
-                <input className="form-input w-full mb-2" placeholder="Password" value={newStudent.password} onChange={e=>setNewStudent(prev=>({...prev,password:e.target.value}))} />
-                <button type="submit" className="px-3 py-2 bg-green-600 text-white rounded">Create Student</button>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <form onSubmit={handleCreateStudent} className="bg-white shadow rounded-lg p-3 sm:p-4">
+                <h3 className="font-medium mb-2 text-sm sm:text-base">Add Student</h3>
+                <input className="form-input w-full mb-2 text-sm" placeholder="Name" value={newStudent.name} onChange={e=>setNewStudent(prev=>({...prev,name:e.target.value}))} />
+                <input className="form-input w-full mb-2 text-sm" placeholder="Email" value={newStudent.email} onChange={e=>setNewStudent(prev=>({...prev,email:e.target.value}))} />
+                <input className="form-input w-full mb-2 text-sm" placeholder="Password" value={newStudent.password} onChange={e=>setNewStudent(prev=>({...prev,password:e.target.value}))} />
+                <button type="submit" className="px-3 py-2 bg-green-600 text-white rounded text-sm w-full sm:w-auto">Create Student</button>
               </form>
 
-              <form onSubmit={handleCreateVerifier} className="bg-white shadow rounded-lg p-4">
-                <h3 className="font-medium mb-2">Add Verifier</h3>
-                <input className="form-input w-full mb-2" placeholder="Name" value={newVerifier.name} onChange={e=>setNewVerifier(prev=>({...prev,name:e.target.value}))} />
-                <input className="form-input w-full mb-2" placeholder="Email" value={newVerifier.email} onChange={e=>setNewVerifier(prev=>({...prev,email:e.target.value}))} />
-                <input className="form-input w-full mb-2" placeholder="Password" value={newVerifier.password} onChange={e=>setNewVerifier(prev=>({...prev,password:e.target.value}))} />
-                <button type="submit" className="px-3 py-2 bg-indigo-600 text-white rounded">Create Verifier</button>
+              <form onSubmit={handleCreateVerifier} className="bg-white shadow rounded-lg p-3 sm:p-4">
+                <h3 className="font-medium mb-2 text-sm sm:text-base">Add Verifier</h3>
+                <input className="form-input w-full mb-2 text-sm" placeholder="Name" value={newVerifier.name} onChange={e=>setNewVerifier(prev=>({...prev,name:e.target.value}))} />
+                <input className="form-input w-full mb-2 text-sm" placeholder="Email" value={newVerifier.email} onChange={e=>setNewVerifier(prev=>({...prev,email:e.target.value}))} />
+                <input className="form-input w-full mb-2 text-sm" placeholder="Password" value={newVerifier.password} onChange={e=>setNewVerifier(prev=>({...prev,password:e.target.value}))} />
+                <button type="submit" className="px-3 py-2 bg-indigo-600 text-white rounded text-sm w-full sm:w-auto">Create Verifier</button>
               </form>
             </div>
 
-            <div className="bg-white shadow rounded-lg p-6">
+            <div className="bg-white shadow rounded-lg p-3 sm:p-6">
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Joined</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                      <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+                      <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+                      <th className="hidden sm:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Joined</th>
+                      <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {loadingUsers ? (
-                      <tr><td colSpan={4} className="p-6 text-center">Loading...</td></tr>
+                      <tr><td colSpan={4} className="p-3 sm:p-6 text-center text-sm">Loading...</td></tr>
                     ) : users.length === 0 ? (
-                      <tr><td colSpan={4} className="p-6 text-center text-gray-500">No users</td></tr>
+                      <tr><td colSpan={4} className="p-3 sm:p-6 text-center text-gray-500 text-sm">No users</td></tr>
                     ) : users.map(u => (
                       <tr key={u._id}>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900">{u.name}</div>
-                          <div className="text-sm text-gray-500">{u.email}</div>
+                        <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
+                          <div className="text-xs sm:text-sm font-medium text-gray-900 truncate max-w-[120px] sm:max-w-none">{u.name}</div>
+                          <div className="text-xs sm:text-sm text-gray-500 truncate max-w-[120px] sm:max-w-none">{u.email}</div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <select value={u.role} onChange={(e) => handleRoleChange(u._id, e.target.value)} className="text-sm border-gray-300 rounded-md">
+                        <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
+                          <select value={u.role} onChange={(e) => handleRoleChange(u._id, e.target.value)} className="text-xs sm:text-sm border-gray-300 rounded-md w-full">
                             <option value="STUDENT">STUDENT</option>
                             <option value="VERIFIER">VERIFIER</option>
                           </select>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(u.createdAt).toLocaleDateString()}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          <button onClick={() => handleOpenEditUser(u)} className="text-primary-600 hover:text-primary-900 mr-4">Edit</button>
+                        <td className="hidden sm:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(u.createdAt).toLocaleDateString()}</td>
+                        <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-xs sm:text-sm font-medium">
+                          <button onClick={() => handleOpenEditUser(u)} className="text-primary-600 hover:text-primary-900 mr-2 sm:mr-4">Edit</button>
                           <button onClick={() => handleRemoveUser(u._id)} className="text-red-600 hover:text-red-900">Remove</button>
                         </td>
                       </tr>
@@ -567,46 +567,46 @@ function InstituteAdminDashboardContent() {
               </div>
 
               {/* pagination */}
-              <div className="mt-4 flex items-center justify-between">
-                <div className="text-sm text-gray-600">Page {usersPagination.page} of {usersPagination.pages}</div>
-                <div className="space-x-2">
-                  <button onClick={() => changeUsersPage(Math.max(1, usersPagination.page - 1))} disabled={usersPagination.page <= 1} className="px-3 py-1 border rounded">Prev</button>
-                  <button onClick={() => changeUsersPage(Math.min(usersPagination.pages, usersPagination.page + 1))} disabled={usersPagination.page >= usersPagination.pages} className="px-3 py-1 border rounded">Next</button>
+              <div className="mt-4 flex flex-col sm:flex-row items-center justify-between space-y-2 sm:space-y-0 px-3 sm:px-0">
+                <div className="text-xs sm:text-sm text-gray-600">Page {usersPagination.page} of {usersPagination.pages}</div>
+                <div className="flex space-x-2">
+                  <button onClick={() => changeUsersPage(Math.max(1, usersPagination.page - 1))} disabled={usersPagination.page <= 1} className="px-2 sm:px-3 py-1 border rounded text-xs sm:text-sm disabled:opacity-50">Prev</button>
+                  <button onClick={() => changeUsersPage(Math.min(usersPagination.pages, usersPagination.page + 1))} disabled={usersPagination.page >= usersPagination.pages} className="px-2 sm:px-3 py-1 border rounded text-xs sm:text-sm disabled:opacity-50">Next</button>
                 </div>
               </div>
             </div>
 
             {/* Edit user modal-like area */}
             {editUser && (
-              <div className="bg-white shadow rounded-lg p-4">
-                <h3 className="font-medium mb-2">Edit User</h3>
-                <input className="form-input mb-2 w-full" value={editUser.name} onChange={e=>setEditUser({...editUser, name: e.target.value})} />
-                <input className="form-input mb-2 w-full" value={editUser.email} onChange={e=>setEditUser({...editUser, email: e.target.value})} />
-                <input className="form-input mb-2 w-full" value={editUser.bio||''} onChange={e=>setEditUser({...editUser, bio: e.target.value})} placeholder="bio" />
-                <input className="form-input mb-2 w-full" value={editUser.githubUsername||''} onChange={e=>setEditUser({...editUser, githubUsername: e.target.value})} placeholder="github username" />
-                <div className="flex space-x-2">
-                  <button onClick={handleUpdateUser} className="px-3 py-2 bg-primary-600 text-white rounded">Save</button>
-                  <button onClick={()=>setEditUser(null)} className="px-3 py-2 border rounded">Cancel</button>
+              <div className="bg-white shadow rounded-lg p-3 sm:p-4">
+                <h3 className="font-medium mb-2 text-sm sm:text-base">Edit User</h3>
+                <input className="form-input mb-2 w-full text-sm" value={editUser.name} onChange={e=>setEditUser({...editUser, name: e.target.value})} />
+                <input className="form-input mb-2 w-full text-sm" value={editUser.email} onChange={e=>setEditUser({...editUser, email: e.target.value})} />
+                <input className="form-input mb-2 w-full text-sm" value={editUser.bio||''} onChange={e=>setEditUser({...editUser, bio: e.target.value})} placeholder="bio" />
+                <input className="form-input mb-2 w-full text-sm" value={editUser.githubUsername||''} onChange={e=>setEditUser({...editUser, githubUsername: e.target.value})} placeholder="github username" />
+                <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
+                  <button onClick={handleUpdateUser} className="px-3 py-2 bg-primary-600 text-white rounded text-sm">Save</button>
+                  <button onClick={()=>setEditUser(null)} className="px-3 py-2 border rounded text-sm">Cancel</button>
                 </div>
               </div>
             )}
 
             {/* Reset password area */}
-            <div className="bg-white shadow rounded-lg p-4">
-              <h3 className="font-medium mb-2">Reset User Password</h3>
-              <input className="form-input mb-2 w-full" placeholder="User ID" value={resetPasswordData.userId} onChange={e=>setResetPasswordData(prev=>({...prev,userId:e.target.value}))} />
-              <input className="form-input mb-2 w-full" placeholder="New Password" value={resetPasswordData.newPassword} onChange={e=>setResetPasswordData(prev=>({...prev,newPassword:e.target.value}))} />
-              <div className="flex space-x-2">
-                <button onClick={handleResetUserPassword} className="px-3 py-2 bg-yellow-600 text-white rounded">Reset</button>
+            <div className="bg-white shadow rounded-lg p-3 sm:p-4">
+              <h3 className="font-medium mb-2 text-sm sm:text-base">Reset User Password</h3>
+              <input className="form-input mb-2 w-full text-sm" placeholder="User ID" value={resetPasswordData.userId} onChange={e=>setResetPasswordData(prev=>({...prev,userId:e.target.value}))} />
+              <input className="form-input mb-2 w-full text-sm" placeholder="New Password" value={resetPasswordData.newPassword} onChange={e=>setResetPasswordData(prev=>({...prev,newPassword:e.target.value}))} />
+              <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
+                <button onClick={handleResetUserPassword} className="px-3 py-2 bg-yellow-600 text-white rounded text-sm">Reset</button>
               </div>
             </div>
 
             {/* CSV Bulk Import */}
-            <div className="bg-white shadow rounded-lg p-4">
-              <h3 className="font-medium mb-2">CSV Bulk Import Users</h3>
-              <div className="bg-blue-50 border border-blue-200 rounded-md p-3 mb-4">
-                <h4 className="text-sm font-medium text-blue-800 mb-1">CSV Format Requirements:</h4>
-                <ul className="text-sm text-blue-700 space-y-1">
+            <div className="bg-white shadow rounded-lg p-3 sm:p-4">
+              <h3 className="font-medium mb-2 text-sm sm:text-base">CSV Bulk Import Users</h3>
+              <div className="bg-blue-50 border border-blue-200 rounded-md p-2 sm:p-3 mb-4">
+                <h4 className="text-xs sm:text-sm font-medium text-blue-800 mb-1">CSV Format Requirements:</h4>
+                <ul className="text-xs sm:text-sm text-blue-700 space-y-1">
                   <li>• <strong>Required columns:</strong> name, email</li>
                   <li>• <strong>Optional column:</strong> role (STUDENT or VERIFIER - defaults to STUDENT)</li>
                   <li>• <strong>Passwords:</strong> Generated automatically by the system</li>
@@ -616,39 +616,39 @@ function InstituteAdminDashboardContent() {
                 </ul>
               </div>
               
-              <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-4">
                 {/* Template Download */}
-                <div className="flex items-center space-x-2">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-1 sm:space-y-0 sm:space-x-2">
                   <button 
                     onClick={downloadCsvTemplate}
-                    className="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                    className="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-xs sm:text-sm w-full sm:w-auto"
                   >
                     Download Template CSV
                   </button>
-                  <span className="text-sm text-gray-500">Get the correct CSV format</span>
+                  <span className="text-xs sm:text-sm text-gray-500">Get the correct CSV format</span>
                 </div>
 
                 {/* File Upload */}
-                <div className="flex items-center space-x-2">
+                <div className="flex flex-col space-y-2">
                   <input
                     type="file"
                     accept=".csv"
                     onChange={handleCsvFileChange}
-                    className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100"
+                    className="block w-full text-xs sm:text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:sm:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100"
                   />
                   {csvFile && (
-                    <span className="text-sm text-green-600">
+                    <span className="text-xs sm:text-sm text-green-600">
                       ✓ {csvFile.name}
                     </span>
                   )}
                 </div>
 
                 {/* Import Button */}
-                <div className="flex items-center space-x-2">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
                   <button
                     onClick={handleCsvImport}
                     disabled={!csvFile || csvImportLoading}
-                    className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center space-x-2"
+                    className="px-3 sm:px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center justify-center space-x-2 text-xs sm:text-sm"
                   >
                     {csvImportLoading ? (
                       <>
@@ -671,7 +671,7 @@ function InstituteAdminDashboardContent() {
                   {csvResults && (
                     <button
                       onClick={downloadCsvResults}
-                      className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors"
+                      className="px-3 sm:px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors text-xs sm:text-sm"
                     >
                       📥 Download Results with Passwords
                     </button>
@@ -680,9 +680,9 @@ function InstituteAdminDashboardContent() {
 
                 {/* Results Summary */}
                 {csvResults && (
-                  <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-md">
-                    <h4 className="text-sm font-medium text-green-800">Import Results:</h4>
-                    <ul className="text-sm text-green-700 mt-1">
+                  <div className="mt-4 p-2 sm:p-3 bg-green-50 border border-green-200 rounded-md">
+                    <h4 className="text-xs sm:text-sm font-medium text-green-800">Import Results:</h4>
+                    <ul className="text-xs sm:text-sm text-green-700 mt-1">
                       <li>• Successfully imported: {csvResults.importedCount || 0} users</li>
                       <li>• Failed imports: {csvResults.failedCount || 0} users</li>
                       {csvResults.failedUsers && csvResults.failedUsers.length > 0 && (
@@ -700,35 +700,35 @@ function InstituteAdminDashboardContent() {
         {activeTab === 'requests' && (
           <div className="space-y-6">
             <div className="flex justify-between items-center">
-              <h2 className="text-2xl font-bold text-gray-900">Association Requests</h2>
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Association Requests</h2>
             </div>
 
-            <div className="bg-white shadow rounded-lg p-6">
+            <div className="bg-white shadow rounded-lg p-3 sm:p-6">
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Message</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Requested</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                      <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+                      <th className="hidden sm:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Message</th>
+                      <th className="hidden md:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Requested</th>
+                      <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {loadingRequests ? (
-                      <tr><td colSpan={4} className="p-6 text-center">Loading...</td></tr>
+                      <tr><td colSpan={4} className="p-3 sm:p-6 text-center text-sm">Loading...</td></tr>
                     ) : associationRequests.length === 0 ? (
-                      <tr><td colSpan={4} className="p-6 text-center text-gray-500">No pending association requests</td></tr>
+                      <tr><td colSpan={4} className="p-3 sm:p-6 text-center text-gray-500 text-sm">No pending association requests</td></tr>
                     ) : associationRequests.map(r => (
                       <tr key={r._id}>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900">{r.studentId?.name || r.user?.name || r.student?.name || 'Unknown'}</div>
-                          <div className="text-sm text-gray-500">{r.studentId?.email || r.user?.email}</div>
+                        <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
+                          <div className="text-xs sm:text-sm font-medium text-gray-900 truncate max-w-[120px] sm:max-w-none">{r.studentId?.name || r.user?.name || r.student?.name || 'Unknown'}</div>
+                          <div className="text-xs sm:text-sm text-gray-500 truncate max-w-[120px] sm:max-w-none">{r.studentId?.email || r.user?.email}</div>
                         </td>
-                        <td className="px-6 py-4"><div className="text-sm text-gray-900 max-w-xs truncate">{r.message}</div></td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(r.createdAt).toLocaleDateString()}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          <button onClick={() => handleAssociationRequest(r._id, 'approve')} className="text-green-600 hover:text-green-900 mr-4">Approve</button>
+                        <td className="hidden sm:table-cell px-6 py-4"><div className="text-sm text-gray-900 max-w-xs truncate">{r.message}</div></td>
+                        <td className="hidden md:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(r.createdAt).toLocaleDateString()}</td>
+                        <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-xs sm:text-sm font-medium">
+                          <button onClick={() => handleAssociationRequest(r._id, 'approve')} className="text-green-600 hover:text-green-900 mr-2 sm:mr-4">Approve</button>
                           <button onClick={() => handleAssociationRequest(r._id, 'reject')} className="text-red-600 hover:text-red-900">Reject</button>
                         </td>
                       </tr>
@@ -737,11 +737,11 @@ function InstituteAdminDashboardContent() {
                 </table>
 
                 {/* pagination */}
-                <div className="mt-4 flex items-center justify-between">
-                  <div className="text-sm text-gray-600">Page {requestsPagination.page} of {requestsPagination.pages}</div>
-                  <div className="space-x-2">
-                    <button onClick={() => changeRequestsPage(Math.max(1, requestsPagination.page - 1))} disabled={requestsPagination.page <= 1} className="px-3 py-1 border rounded">Prev</button>
-                    <button onClick={() => changeRequestsPage(Math.min(requestsPagination.pages, requestsPagination.page + 1))} disabled={requestsPagination.page >= requestsPagination.pages} className="px-3 py-1 border rounded">Next</button>
+                <div className="mt-4 flex flex-col sm:flex-row items-center justify-between space-y-2 sm:space-y-0 px-3 sm:px-0">
+                  <div className="text-xs sm:text-sm text-gray-600">Page {requestsPagination.page} of {requestsPagination.pages}</div>
+                  <div className="flex space-x-2">
+                    <button onClick={() => changeRequestsPage(Math.max(1, requestsPagination.page - 1))} disabled={requestsPagination.page <= 1} className="px-2 sm:px-3 py-1 border rounded text-xs sm:text-sm disabled:opacity-50">Prev</button>
+                    <button onClick={() => changeRequestsPage(Math.min(requestsPagination.pages, requestsPagination.page + 1))} disabled={requestsPagination.page >= requestsPagination.pages} className="px-2 sm:px-3 py-1 border rounded text-xs sm:text-sm disabled:opacity-50">Next</button>
                   </div>
                 </div>
               </div>

@@ -48,13 +48,13 @@ const Navbar = () => {
   };
 
   return (
-    <header className="bg-white shadow-sm border-b border-gray-200">
+    <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
+        <div className="flex items-center justify-between h-14 sm:h-16">
           {/* Brand */}
-          <div className="flex items-center gap-4">
-            <Link href="/" className="text-xl font-bold text-primary-600">TruePortMe</Link>
-            <span className="hidden sm:inline-block text-xs text-gray-500">Portfolio & verifications</span>
+          <div className="flex items-center gap-2 sm:gap-4">
+            <Link href="/" className="text-lg sm:text-xl font-bold text-primary-600 truncate">TruePortMe</Link>
+            <span className="hidden md:inline-block text-xs text-gray-500">Portfolio & verifications</span>
           </div>
 
           {/* Desktop nav */}
@@ -114,8 +114,8 @@ const Navbar = () => {
       </div>
 
       {/* Mobile menu panel */}
-      <div className={`md:hidden transition-max-h duration-200 ease-in-out overflow-hidden ${open ? 'max-h-[60vh]' : 'max-h-0'}`}>
-        <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white border-t border-gray-100">
+      <div className={`md:hidden transition-all duration-300 ease-in-out overflow-hidden ${open ? 'max-h-[80vh] opacity-100' : 'max-h-0 opacity-0'}`}>
+        <div className="px-3 pt-2 pb-3 space-y-1 bg-white border-t border-gray-100 shadow-lg">
           {user ? (
             <>
               {user.role === 'VERIFIER' ? (
@@ -137,31 +137,22 @@ const Navbar = () => {
 
               <button
                 onClick={handleLogout}
-                className="w-full text-left px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-red-600"
+                className="w-full text-left px-3 py-3 rounded-md text-sm font-medium text-gray-700 hover:text-red-600 hover:bg-red-50"
               >
                 Logout
               </button>
             </>
           ) : (
             <>
-              <Link href="/auth/login" onClick={() => setOpen(false)} className="block px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-primary-600">Login</Link>
-              <Link href="/auth/register" onClick={() => setOpen(false)} className="block px-3 py-2 rounded-md text-sm font-medium btn-primary">Sign Up</Link>
+              <Link href="/auth/login" onClick={() => setOpen(false)} className="block px-3 py-3 rounded-md text-sm font-medium text-gray-700 hover:text-primary-600 hover:bg-primary-50">Login</Link>
+              <Link href="/auth/register" onClick={() => setOpen(false)} className="block px-3 py-3 rounded-md text-sm font-medium text-center bg-primary-600 text-white hover:bg-primary-700">Sign Up</Link>
             </>
           )}
         </div>
 
         <div className="px-4 py-3 border-t border-gray-100 text-xs text-gray-400">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-center sm:justify-between flex-wrap gap-2">
             <span>© {new Date().getFullYear()} TruePortMe</span>
-            <div className="flex items-center space-x-2">
-              <button 
-                className="p-1 rounded text-gray-500 hover:text-primary-600"
-                title="Toggle theme"
-              >
-                ☀️
-              </button>
-              <Link href="/help" onClick={() => setOpen(false)} className="text-gray-500 hover:text-primary-600">Help</Link>
-            </div>
           </div>
         </div>
       </div>

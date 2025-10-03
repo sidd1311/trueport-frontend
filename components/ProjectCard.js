@@ -104,11 +104,11 @@ const ProjectCard = ({ project, showActions = false, onEdit, onDelete, showToast
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
-      <div className="p-6">
+      <div className="p-4 sm:p-6">
         {/* Header with title and visibility badge */}
-        <div className="flex justify-between items-start mb-4">
-          <div className="flex-1">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">{displayTitle}</h3>
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 mb-3 sm:mb-4">
+          <div className="flex-1 min-w-0">
+            <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2 break-words">{displayTitle}</h3>
             {(category || projectType) && (
               <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
                 getCategoryColor(category || projectType)
@@ -117,22 +117,22 @@ const ProjectCard = ({ project, showActions = false, onEdit, onDelete, showToast
               </span>
             )}
           </div>
-          <div className="ml-2">
+          <div className="flex-shrink-0">
             {getVisibilityBadge()}
           </div>
         </div>
 
         {/* Description */}
         {description && (
-          <p className="text-gray-600 text-sm mb-4 line-clamp-3">
+          <p className="text-gray-600 text-xs sm:text-sm mb-3 sm:mb-4 line-clamp-3 break-words">
             {description}
           </p>
         )}
 
         {/* Skills */}
         {displaySkills.length > 0 && (
-          <div className="mb-4">
-            <div className="flex flex-wrap gap-1">
+          <div className="mb-3 sm:mb-4">
+            <div className="flex flex-wrap gap-1 sm:gap-1.5">
               {displaySkills.slice(0, 4).map((skill, index) => (
                 <span
                   key={index}
@@ -152,15 +152,15 @@ const ProjectCard = ({ project, showActions = false, onEdit, onDelete, showToast
 
         {/* Learnings */}
         {learnings && (
-          <div className="mb-4">
-            <p className="text-sm text-gray-600 line-clamp-2">
+          <div className="mb-3 sm:mb-4">
+            <p className="text-xs sm:text-sm text-gray-600 line-clamp-2 break-words">
               <span className="font-medium">Key Learnings:</span> {learnings}
             </p>
           </div>
         )}
 
         {/* Links */}
-        <div className="flex gap-2 mb-4 flex-wrap">
+        <div className="flex gap-1.5 sm:gap-2 mb-3 sm:mb-4 flex-wrap">
           {(links.githubUrl || repositoryUrl) && (
             <a
               href={links.githubUrl || repositoryUrl}
@@ -179,7 +179,7 @@ const ProjectCard = ({ project, showActions = false, onEdit, onDelete, showToast
               href={links.liveUrl || liveUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+              className="inline-flex items-center px-2 sm:px-3 py-1.5 border border-gray-300 text-xs sm:text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
             >
               <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
@@ -192,7 +192,7 @@ const ProjectCard = ({ project, showActions = false, onEdit, onDelete, showToast
               href={links.portfolioUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+              className="inline-flex items-center px-2 sm:px-3 py-1.5 border border-gray-300 text-xs sm:text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
             >
               <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
@@ -205,7 +205,7 @@ const ProjectCard = ({ project, showActions = false, onEdit, onDelete, showToast
               href={links.documentUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+              className="inline-flex items-center px-2 sm:px-3 py-1.5 border border-gray-300 text-xs sm:text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
             >
               <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -217,10 +217,10 @@ const ProjectCard = ({ project, showActions = false, onEdit, onDelete, showToast
 
         {/* Actions */}
         {showActions && (
-          <div className="flex gap-2 pt-4 border-t border-gray-200">
+          <div className="flex flex-col sm:flex-row gap-2 pt-3 sm:pt-4 border-t border-gray-200">
             <button
               onClick={onEdit}
-              className="flex-1 inline-flex justify-center items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+              className="flex-1 inline-flex justify-center items-center px-3 py-2 border border-gray-300 text-xs sm:text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
             >
               <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -230,11 +230,12 @@ const ProjectCard = ({ project, showActions = false, onEdit, onDelete, showToast
 
             <button
               onClick={onDelete}
-              className="inline-flex items-center px-3 py-2 border border-red-300 text-sm font-medium rounded-md text-red-700 bg-white hover:bg-red-50"
+              className="sm:flex-none inline-flex items-center justify-center px-3 py-2 border border-red-300 text-xs sm:text-sm font-medium rounded-md text-red-700 bg-white hover:bg-red-50"
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 sm:mr-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
             </svg>
+              <span className="ml-1 sm:hidden">Delete</span>
             </button>
           </div>
         )}

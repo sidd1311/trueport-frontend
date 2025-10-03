@@ -156,15 +156,15 @@ export default function PublicPortfolio() {
     .slice(0, 12);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 pb-8">
       <Head>
         <title>{getDisplayName(user)} - TruePortMe Portfolio</title>
         <meta name="description" content={`Professional portfolio of ${getDisplayName(user)}${user.bio ? ` - ${user.bio}` : ''}`} />
       </Head>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
         {/* Top Card: Left identity + contacts, Middle stats, Right QR */}
-        <div className="mb-8">
+        <div className="mb-6 sm:mb-8">
           <WCard
             user={user}
             contactInfo={publicContactInfo}
@@ -177,14 +177,14 @@ export default function PublicPortfolio() {
 
         {/* Skills */}
         {skillsTop.length > 0 && (
-          <div className="mb-8">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-gray-900">Skills</h2>
-              <span className="text-sm text-gray-500">Top {skillsTop.length}</span>
+          <div className="mb-6 sm:mb-8">
+            <div className="flex justify-between items-center mb-3 sm:mb-4">
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900">Skills</h2>
+              <span className="text-xs sm:text-sm text-gray-500">Top {skillsTop.length}</span>
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-1.5 sm:gap-2">
               {skillsTop.map(([name, count]) => (
-                <span key={name} className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                <span key={name} className="inline-flex items-center px-2 sm:px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
                   {name}
                   <span className="ml-1 text-[10px] text-gray-500">×{count}</span>
                 </span>
@@ -195,9 +195,9 @@ export default function PublicPortfolio() {
 
         {/* Latest Education */}
         {sortedEducation.length > 0 && (
-          <div className="mb-8">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-gray-900">Latest Education</h2>
+          <div className="mb-6 sm:mb-8">
+            <div className="flex justify-between items-center mb-3 sm:mb-4">
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900">Latest Education</h2>
               <div className="flex items-center text-sm text-gray-600">
                 <div className="verified-badge mr-2">
                   <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">

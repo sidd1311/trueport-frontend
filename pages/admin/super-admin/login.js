@@ -61,21 +61,21 @@ export default function SuperAdminLogin() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
+      <div className="sm:mx-auto sm:w-full sm:max-w-md px-4 sm:px-0">
         <div className="flex justify-center">
           <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-sm">T</span>
+            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
+              <span className="text-white font-bold text-sm sm:text-base">T</span>
             </div>
-            <span className="text-2xl font-bold text-gray-900">TruePortMe</span>
+            <span className="text-xl sm:text-2xl font-bold text-gray-900">TruePortMe</span>
           </div>
         </div>
-        <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">Super Admin Login</h2>
-        <p className="mt-2 text-center text-sm text-gray-600">SAAS Provider Dashboard Access</p>
+        <h2 className="mt-6 text-center text-2xl sm:text-3xl font-extrabold text-gray-900">Super Admin Login</h2>
+        <p className="mt-2 text-center text-xs sm:text-sm text-gray-600">SAAS Provider Dashboard Access</p>
       </div>
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md px-4 sm:px-0">
+        <div className="bg-white py-6 sm:py-8 px-4 sm:px-10 shadow sm:rounded-lg">
           <form className="space-y-6" onSubmit={handleSubmit}>
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email address</label>
@@ -127,20 +127,20 @@ export default function SuperAdminLogin() {
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-gray-300" />
               </div>
-              <div className="relative flex justify-center text-sm">
+              <div className="relative flex justify-center text-xs sm:text-sm">
                 <span className="px-2 bg-white text-gray-500">Other admin types</span>
               </div>
             </div>
 
             <div className="mt-6 grid grid-cols-1 gap-3">
-              <Link href="/admin/institute-admin/login" className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+              <Link href="/admin/institute-admin/login" className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-xs sm:text-sm font-medium text-gray-500 hover:bg-gray-50">
                 <span>Institute Admin Login</span>
               </Link>
             </div>
           </div>
 
           <div className="mt-6 text-center">
-            <Link href="/auth/login" className="text-sm text-primary-600 hover:text-primary-500">← Back to Student/Verifier Login</Link>
+            <Link href="/auth/login" className="text-xs sm:text-sm text-primary-600 hover:text-primary-500">← Back to Student/Verifier Login</Link>
           </div>
         </div>
       </div>

@@ -342,17 +342,17 @@ function SuperAdminDashboardContent() {
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white shadow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-4">
-              <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center py-4 sm:h-16 space-y-3 sm:space-y-0">
+            <div className="flex items-center space-x-3 sm:space-x-4">
+              <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center flex-shrink-0">
                 <span className="text-white font-bold text-sm">T</span>
               </div>
-              <h1 className="text-xl font-semibold text-gray-900">Super Admin Dashboard</h1>
+              <h1 className="text-lg sm:text-xl font-semibold text-gray-900">Super Admin Dashboard</h1>
             </div>
 
-            <div className="flex items-center space-x-4">
-              <span className="text-sm text-gray-700">Welcome, {user?.name}</span>
-              <button onClick={handleLogout} className="text-sm text-red-600 hover:text-red-500">Logout</button>
+            <div className="flex items-center space-x-2 sm:space-x-4">
+              <span className="text-xs sm:text-sm text-gray-700 truncate max-w-[150px] sm:max-w-none">Welcome, {user?.name}</span>
+              <button onClick={handleLogout} className="text-xs sm:text-sm text-red-600 hover:text-red-500 whitespace-nowrap">Logout</button>
             </div>
           </div>
         </div>
@@ -371,22 +371,22 @@ function SuperAdminDashboardContent() {
 
         {activeTab === 'overview' && analytics && (
           <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <div className="card p-6 bg-white shadow rounded-lg">
-                <p className="text-sm font-medium text-gray-500">Total Institutions</p>
-                <p className="text-2xl font-semibold text-gray-900">{analytics.overview?.totalInstitutions || 0}</p>
+            <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
+              <div className="card p-3 sm:p-6 bg-white shadow rounded-lg">
+                <p className="text-xs sm:text-sm font-medium text-gray-500">Total Institutions</p>
+                <p className="text-lg sm:text-2xl font-semibold text-gray-900">{analytics.overview?.totalInstitutions || 0}</p>
               </div>
-              <div className="card p-6 bg-white shadow rounded-lg">
-                <p className="text-sm font-medium text-gray-500">Institute Admins</p>
-                <p className="text-2xl font-semibold text-gray-900">{analytics.overview?.totalInstituteAdmins || 0}</p>
+              <div className="card p-3 sm:p-6 bg-white shadow rounded-lg">
+                <p className="text-xs sm:text-sm font-medium text-gray-500">Institute Admins</p>
+                <p className="text-lg sm:text-2xl font-semibold text-gray-900">{analytics.overview?.totalInstituteAdmins || 0}</p>
               </div>
-              <div className="card p-6 bg-white shadow rounded-lg">
-                <p className="text-sm font-medium text-gray-500">Total Users</p>
-                <p className="text-2xl font-semibold text-gray-900">{analytics.overview?.totalUsers || 0}</p>
+              <div className="card p-3 sm:p-6 bg-white shadow rounded-lg">
+                <p className="text-xs sm:text-sm font-medium text-gray-500">Total Users</p>
+                <p className="text-lg sm:text-2xl font-semibold text-gray-900">{analytics.overview?.totalUsers || 0}</p>
               </div>
-              <div className="card p-6 bg-white shadow rounded-lg">
-                <p className="text-sm font-medium text-gray-500">Active Institutions</p>
-                <p className="text-2xl font-semibold text-gray-900">{analytics.overview?.activeInstitutions || 0}</p>
+              <div className="card p-3 sm:p-6 bg-white shadow rounded-lg">
+                <p className="text-xs sm:text-sm font-medium text-gray-500">Active Institutions</p>
+                <p className="text-lg sm:text-2xl font-semibold text-gray-900">{analytics.overview?.activeInstitutions || 0}</p>
               </div>
             </div>
 
@@ -439,26 +439,26 @@ function SuperAdminDashboardContent() {
             </div>
 
             <div className="bg-white shadow rounded-lg">
-              <div className="p-6 overflow-x-auto">
+              <div className="p-3 sm:p-6 overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Institution</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Website</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Users</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                      <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Institution</th>
+                      <th className="hidden md:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Website</th>
+                      <th className="hidden sm:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Users</th>
+                      <th className="hidden lg:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                      <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {institutions.map(inst=> (
                       <tr key={inst._id}>
-                        <td className="px-6 py-4 whitespace-nowrap"><div className="text-sm font-medium text-gray-900">{inst.displayName}</div><div className="text-sm text-gray-500">{inst.name}</div></td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{inst.website ? <a href={inst.website} target="_blank" rel="noreferrer" className="text-primary-600">{inst.website}</a> : '-'}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{inst.userCount || 0}</td>
-                        <td className="px-6 py-4 whitespace-nowrap"><span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${inst.status==='ACTIVE' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>{inst.status||'ACTIVE'}</span></td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          <button onClick={()=>openEditInstitution(inst)} className="text-primary-600 hover:text-primary-900 mr-4">Edit</button>
+                        <td className="px-3 sm:px-6 py-4 whitespace-nowrap"><div className="text-xs sm:text-sm font-medium text-gray-900 truncate max-w-[120px] sm:max-w-none">{inst.displayName}</div><div className="text-xs sm:text-sm text-gray-500 truncate max-w-[120px] sm:max-w-none">{inst.name}</div></td>
+                        <td className="hidden md:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-500">{inst.website ? <a href={inst.website} target="_blank" rel="noreferrer" className="text-primary-600">{inst.website}</a> : '-'}</td>
+                        <td className="hidden sm:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-900">{inst.userCount || 0}</td>
+                        <td className="hidden lg:table-cell px-6 py-4 whitespace-nowrap"><span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${inst.status==='ACTIVE' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>{inst.status||'ACTIVE'}</span></td>
+                        <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-xs sm:text-sm font-medium">
+                          <button onClick={()=>openEditInstitution(inst)} className="text-primary-600 hover:text-primary-900 mr-2 sm:mr-4">Edit</button>
                           <button onClick={()=>handleDeleteInstitution(inst._id)} className="text-red-600 hover:text-red-900">Delete</button>
                         </td>
                       </tr>
@@ -488,15 +488,15 @@ function SuperAdminDashboardContent() {
               }} className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors">Add Institute Admin</button>
             </div>
 
-            <div className="bg-white shadow rounded-lg p-6 overflow-x-auto">
+            <div className="bg-white shadow rounded-lg p-3 sm:p-6 overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Admin</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Institution</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Admin</th>
+                    <th className="hidden md:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Institution</th>
+                    <th className="hidden lg:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
+                    <th className="hidden sm:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
@@ -520,20 +520,20 @@ function SuperAdminDashboardContent() {
 
         {activeTab === 'settings' && (
           <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-gray-900">Settings</h2>
-            <div className="bg-white shadow rounded-lg p-6">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Profile Settings</h3>
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Settings</h2>
+            <div className="bg-white shadow rounded-lg p-3 sm:p-6">
+              <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-4">Profile Settings</h3>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Name</label>
-                  <input type="text" value={user?.name||''} className="form-input mt-1" readOnly />
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700">Name</label>
+                  <input type="text" value={user?.name||''} className="form-input mt-1 text-sm" readOnly />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Email</label>
-                  <input type="email" value={user?.email||''} className="form-input mt-1" readOnly />
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700">Email</label>
+                  <input type="email" value={user?.email||''} className="form-input mt-1 text-sm" readOnly />
                 </div>
-                <div className="flex space-x-2">
-                  <button onClick={()=>setShowChangePassword(true)} className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors">Change Password</button>
+                <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
+                  <button onClick={()=>setShowChangePassword(true)} className="bg-primary-600 hover:bg-primary-700 text-white px-3 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-medium transition-colors">Change Password</button>
                 </div>
               </div>
             </div>
@@ -545,17 +545,17 @@ function SuperAdminDashboardContent() {
 
       {/* Create / Edit Institution Modal */}
       {showCreateInstitution && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
-          <form onSubmit={handleCreateInstitution} className="bg-white p-6 rounded shadow-lg w-full max-w-md">
-            <h3 className="text-lg font-bold mb-4">{editingInstitutionId ? 'Edit Institution' : 'Create Institution'}</h3>
-            <div className="space-y-3">
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50 p-4">
+          <form onSubmit={handleCreateInstitution} className="bg-white p-4 sm:p-6 rounded shadow-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <h3 className="text-base sm:text-lg font-bold mb-3 sm:mb-4">{editingInstitutionId ? 'Edit Institution' : 'Create Institution'}</h3>
+            <div className="space-y-2 sm:space-y-3">
               <div>
-                <label className="block text-sm font-medium text-gray-700">Name (unique)</label>
-                <input name="name" value={institutionForm.name} onChange={handleInstitutionChange} className="form-input mt-1 w-full" required />
+                <label className="block text-xs sm:text-sm font-medium text-gray-700">Name (unique)</label>
+                <input name="name" value={institutionForm.name} onChange={handleInstitutionChange} className="form-input mt-1 w-full text-sm" required />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">Display Name</label>
-                <input name="displayName" value={institutionForm.displayName} onChange={handleInstitutionChange} className="form-input mt-1 w-full" required />
+                <label className="block text-xs sm:text-sm font-medium text-gray-700">Display Name</label>
+                <input name="displayName" value={institutionForm.displayName} onChange={handleInstitutionChange} className="form-input mt-1 w-full text-sm" required />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">Description</label>
@@ -606,17 +606,17 @@ function SuperAdminDashboardContent() {
 
       {/* Create / Edit Admin Modal */}
       {showCreateAdmin && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
-          <form onSubmit={handleCreateAdmin} className="bg-white p-6 rounded shadow-lg w-full max-w-md">
-            <h3 className="text-lg font-bold mb-4">{editingAdminId ? 'Edit Institute Admin' : 'Create Institute Admin'}</h3>
-            <div className="space-y-3">
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50 p-4">
+          <form onSubmit={handleCreateAdmin} className="bg-white p-4 sm:p-6 rounded shadow-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <h3 className="text-base sm:text-lg font-bold mb-3 sm:mb-4">{editingAdminId ? 'Edit Institute Admin' : 'Create Institute Admin'}</h3>
+            <div className="space-y-2 sm:space-y-3">
               <div>
-                <label className="block text-sm font-medium text-gray-700">Name</label>
-                <input name="name" value={adminForm.name} onChange={handleAdminChange} className="form-input mt-1 w-full" required />
+                <label className="block text-xs sm:text-sm font-medium text-gray-700">Name</label>
+                <input name="name" value={adminForm.name} onChange={handleAdminChange} className="form-input mt-1 w-full text-sm" required />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">Email</label>
-                <input name="email" value={adminForm.email} onChange={handleAdminChange} type="email" className="form-input mt-1 w-full" required />
+                <label className="block text-xs sm:text-sm font-medium text-gray-700">Email</label>
+                <input name="email" value={adminForm.email} onChange={handleAdminChange} type="email" className="form-input mt-1 w-full text-sm" required />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">Phone</label>

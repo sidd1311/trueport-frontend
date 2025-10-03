@@ -81,17 +81,17 @@ export default function NewExperience({ showToast }) {
         <title>Add New Experience - TruePortMe</title>
       </Head>
 
-      <div className="min-h-screen bg-gray-50">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="mb-8">
-            <h1 className="text-2xl font-bold text-gray-900">Add New Experience</h1>
-            <p className="text-gray-600">Share details about your professional experience</p>
+      <div className="min-h-screen bg-gray-50 pb-8">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+          <div className="mb-6 sm:mb-8">
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Add New Experience</h1>
+            <p className="text-sm sm:text-base text-gray-600 mt-1">Share details about your professional experience</p>
           </div>
 
           <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-            <form onSubmit={handleSubmit} className="p-6 space-y-6">
+            <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4 sm:space-y-6">
               <div>
-                <label htmlFor="title" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="title" className="block text-xs sm:text-sm font-medium text-gray-700">
                   Experience Title *
                 </label>
                 <input
