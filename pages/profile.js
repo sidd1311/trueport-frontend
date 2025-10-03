@@ -7,6 +7,7 @@ import EducationCard from '../components/EducationCard';
 import ProjectCard from '../components/ProjectCard';
 import api from '../utils/api';
 import userAPI from '../utils/userAPI';
+import WCard from '../components/WCard';
 
 export default function Profile({ showToast }) {
   const router = useRouter();
@@ -199,6 +200,8 @@ const fetchContactInfo = async () => {
       showToast('Failed to update visibility', 'error');
     }
   };
+
+  const portfolioUrl = `${process.env.NEXT_PUBLIC_FRONTEND_URL}/portfolio/${user?._id || ''}`;
 
   const handleContactInfoChange = (e) => {
     setContactInfo({
@@ -469,6 +472,10 @@ const fetchContactInfo = async () => {
           {/* Tab Content */}
           {activeTab === 'profile' && (
             <>
+              {/* WCard Preview */}
+              <div className="mb-8">
+                <WCard user={user} contactInfo={contactInfo} portfolioUrl={portfolioUrl} showToast={showToast} />
+              </div>
               <div className="bg-white rounded-lg shadow-sm border border-gray-200">
                 <form onSubmit={handleSubmit} className="p-6 space-y-6">
                   <div>
