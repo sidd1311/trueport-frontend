@@ -3,12 +3,12 @@ import { useRouter } from 'next/router';
 import Head from 'next/head';
 import Link from 'next/link';
 import ProtectedRoute from '../../components/ProtectedRoute';
-import GitHubProjectCard from '../../components/GitHubProjectCard';
+import ProjectCard from '../../components/ProjectCard';
 import Pagination from '../../components/Pagination';
-import VerifierSelectionModal from '../../components/VerifierSelectionModal';
+
 import api from '../../utils/api';
 
-export default function GitHubProjects({ showToast }) {
+export default function Projects({ showToast }) {
   const router = useRouter();
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -18,11 +18,11 @@ export default function GitHubProjects({ showToast }) {
   const [search, setSearch] = useState('');
   const [stats, setStats] = useState({
     total: 0,
-    verified: 0,
-    pending: 0,
-    rejected: 0
+    public: 0,
+    private: 0,
+    recent: 0
   });
-  const [verifierModal, setVerifierModal] = useState({ isOpen: false, projectId: null });
+
 
   useEffect(() => {
     fetchProjects();
@@ -36,10 +36,14 @@ export default function GitHubProjects({ showToast }) {
       let queryString = `page=${currentPage}&limit=6`;
       
       if (filter !== 'all') {
-        if (filter === 'VERIFIED') {
-          queryString += '&verified=true';
-        } else if (filter === 'PENDING' || filter === 'REJECTED' || filter === 'NOT_REQUESTED') {
-          queryString += '&verified=false';
+        if (filter === 'public') {
+          queryString += '&isPublic=true';
+        } else if (filter === 'private') {
+          queryString += '&isPublic=false';
+        } else if (filter === 'recent') {
+          const thirtyDaysAgo = new Date();
+          thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+          queryString += `&createdAfter=${thirtyDaysAgo.toISOString()}`;
         }
       }
       
@@ -47,13 +51,13 @@ export default function GitHubProjects({ showToast }) {
         queryString += `&search=${encodeURIComponent(search)}`;
       }
 
-      console.log('Fetching projects:', `/github-projects?${queryString}`);
+      console.log('Fetching projects:', `/projects?${queryString}`);
       
-      const response = await api.get(`/github-projects?${queryString}`);
+      const response = await api.get(`/projects?${queryString}`);
       console.log('Full API response:', response.data);
 
       // Extract data from backend response structure
-      const projectsData = response.data.githubProjects || response.data.projects || [];
+      const projectsData = response.data.projects || response.data.githubProjects || [];
       const pagination = response.data.pagination || {};
       
       console.log('Projects data:', projectsData);
@@ -62,9 +66,15 @@ export default function GitHubProjects({ showToast }) {
       // Calculate stats from the projects
       const calculatedStats = {
         total: pagination.total || projectsData.length,
-        verified: projectsData.filter(p => p.verified === true).length,
-        pending: projectsData.filter(p => p.verified === false && p.verificationStatus === 'PENDING').length,
-        rejected: projectsData.filter(p => p.verificationStatus === 'REJECTED').length
+        public: projectsData.filter(p => p.isPublic !== false).length,
+        private: projectsData.filter(p => p.isPublic === false).length,
+        recent: projectsData.filter(p => {
+          if (!p.createdAt) return false;
+          const created = new Date(p.createdAt);
+          const monthAgo = new Date();
+          monthAgo.setMonth(monthAgo.getMonth() - 1);
+          return created > monthAgo;
+        }).length
       };
 
       setProjects(projectsData);
@@ -72,15 +82,15 @@ export default function GitHubProjects({ showToast }) {
       setStats(calculatedStats);
 
     } catch (error) {
-      console.error('Failed to fetch GitHub projects:', error);
+      console.error('Failed to fetch projects:', error);
       console.error('Error details:', error.response?.data);
       
       // Reset to empty state on error
       setProjects([]);
       setTotalPages(1);
-      setStats({ total: 0, verified: 0, pending: 0, rejected: 0 });
+      setStats({ total: 0, public: 0, private: 0, recent: 0 });
       
-      showToast('Failed to load GitHub projects', 'error');
+      showToast('Failed to load projects', 'error');
     } finally {
       setLoading(false);
     }
@@ -90,7 +100,7 @@ export default function GitHubProjects({ showToast }) {
     if (!confirm('Are you sure you want to delete this project?')) return;
 
     try {
-      await api.delete(`/github-projects/${projectId}`);
+      await api.delete(`/projects/${projectId}`);
       showToast('Project deleted successfully', 'success');
       fetchProjects();
     } catch (error) {
@@ -99,18 +109,7 @@ export default function GitHubProjects({ showToast }) {
     }
   };
 
-  const handleRequestVerification = (projectId) => {
-    setVerifierModal({ isOpen: true, projectId });
-  };
 
-  const handleVerifierModalClose = () => {
-    setVerifierModal({ isOpen: false, projectId: null });
-  };
-
-  const handleVerifierSelected = () => {
-    // Refresh projects to update status
-    fetchProjects();
-  };
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -121,7 +120,7 @@ export default function GitHubProjects({ showToast }) {
   return (
     <ProtectedRoute>
       <Head>
-        <title>GitHub Projects - TruePortMe</title>
+        <title>Projects - TruePortMe</title>
       </Head>
 
       <div className="min-h-screen bg-gray-50">
@@ -130,8 +129,8 @@ export default function GitHubProjects({ showToast }) {
           <div className="mb-8">
             <div className="flex justify-between items-center">
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">GitHub Projects</h1>
-                <p className="text-gray-600">Manage your GitHub repositories and showcase your work</p>
+                <h1 className="text-2xl font-bold text-gray-900">Projects</h1>
+                <p className="text-gray-600">Manage your projects and showcase your work</p>
               </div>
               <Link
                 href="/projects/new"
@@ -162,40 +161,41 @@ export default function GitHubProjects({ showToast }) {
               <div className="flex items-center">
                 <div className="p-2 bg-green-100 rounded-lg">
                   <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                   </svg>
                 </div>
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Verified</p>
-                  <p className="text-2xl font-semibold text-gray-900">{stats.verified}</p>
+                  <p className="text-sm font-medium text-gray-600">Public</p>
+                  <p className="text-2xl font-semibold text-gray-900">{stats.public}</p>
                 </div>
               </div>
             </div>
 
             <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
               <div className="flex items-center">
-                <div className="p-2 bg-yellow-100 rounded-lg">
-                  <svg className="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="p-2 bg-gray-100 rounded-lg">
+                  <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
+                  </svg>
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">Private</p>
+                  <p className="text-2xl font-semibold text-gray-900">{stats.private}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+              <div className="flex items-center">
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Pending</p>
-                  <p className="text-2xl font-semibold text-gray-900">{stats.pending}</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-              <div className="flex items-center">
-                <div className="p-2 bg-red-100 rounded-lg">
-                  <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Rejected</p>
-                  <p className="text-2xl font-semibold text-gray-900">{stats.rejected}</p>
+                  <p className="text-sm font-medium text-gray-600">Recent</p>
+                  <p className="text-2xl font-semibold text-gray-900">{stats.recent}</p>
                 </div>
               </div>
             </div>
@@ -227,11 +227,10 @@ export default function GitHubProjects({ showToast }) {
                     setCurrentPage(1);
                   }}
                 >
-                  <option value="all">All Status</option>
-                  <option value="VERIFIED">Verified</option>
-                  <option value="PENDING">Pending</option>
-                  <option value="REJECTED">Rejected</option>
-                  <option value="NOT_REQUESTED">Not Requested</option>
+                  <option value="all">All Projects</option>
+                  <option value="public">Public</option>
+                  <option value="private">Private</option>
+                  <option value="recent">Recent (Last 30 days)</option>
                 </select>
               </div>
             </div>
@@ -249,26 +248,25 @@ export default function GitHubProjects({ showToast }) {
               </svg>
               <h3 className="mt-4 text-lg font-medium text-gray-900">No projects found</h3>
               <p className="mt-2 text-gray-600">
-                Get started by adding your first GitHub project.
+                Get started by adding your first project.
               </p>
               <Link
                 href="/projects/new"
                 className="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700"
               >
-                Add GitHub Project
+                Add Project
               </Link>
             </div>
           ) : (
             <>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
                 {projects.map((project) => (
-                  <GitHubProjectCard
+                  <ProjectCard
                     key={project._id}
                     project={project}
                     showActions={true}
                     onEdit={() => router.push(`/projects/edit/${project._id}`)}
                     onDelete={() => handleDelete(project._id)}
-                    onRequestVerification={() => handleRequestVerification(project._id)}
                     showToast={showToast}
                   />
                 ))}
@@ -285,15 +283,7 @@ export default function GitHubProjects({ showToast }) {
           )}
         </div>
 
-        {/* Verifier Selection Modal */}
-        <VerifierSelectionModal
-          isOpen={verifierModal.isOpen}
-          onClose={handleVerifierModalClose}
-          onSelectVerifier={handleVerifierSelected}
-          itemType="GITHUB_PROJECT"
-          itemId={verifierModal.projectId}
-          showToast={showToast}
-        />
+
       </div>
     </ProtectedRoute>
   );

@@ -19,7 +19,7 @@ export default function EditProject({ showToast }) {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    githubUrl: '',
+    repositoryUrl: '',
     liveUrl: '',
     technologies: [],
     learnings: '',
@@ -36,13 +36,13 @@ export default function EditProject({ showToast }) {
 
   const fetchProject = async () => {
     try {
-      const response = await api.get(`/github-projects/${id}`);
+      const response = await api.get(`/projects/${id}`);
    
-      const project = response.data.githubProject;
+      const project = response.data.project || response.data.githubProject;
       setFormData({
         name: project.projectName,
         description: project.description,
-        githubUrl: project.repositoryUrl,
+        repositoryUrl: project.repositoryUrl,
         liveUrl: project.liveUrl || '',
         technologies: project.technologies || [],
         learnings: project.learnings,
@@ -87,12 +87,12 @@ export default function EditProject({ showToast }) {
     setLoading(true);
 
     try {
-      await api.put(`/github-projects/${id}`, formData);
-      showToast('GitHub project updated successfully!', 'success');
+      await api.put(`/projects/${id}`, formData);
+      showToast('Project updated successfully!', 'success');
       router.push('/projects');
     } catch (error) {
-      console.error('Failed to update GitHub project:', error);
-      showToast(error.response?.data?.message || 'Failed to update GitHub project', 'error');
+      console.error('Failed to update project:', error);
+      showToast(error.response?.data?.message || 'Failed to update project', 'error');
     } finally {
       setLoading(false);
     }
@@ -114,13 +114,13 @@ export default function EditProject({ showToast }) {
   return (
     <ProtectedRoute>
       <Head>
-        <title>Edit GitHub Project - TruePortMe</title>
+        <title>Edit Project - TruePortMe</title>
       </Head>
 
       <div className="min-h-screen bg-gray-50">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="mb-8">
-            <h1 className="text-2xl font-bold text-gray-900">Edit GitHub Project</h1>
+            <h1 className="text-2xl font-bold text-gray-900">Edit Project</h1>
             <p className="text-gray-600">Update your project details and learnings</p>
           </div>
 
@@ -160,21 +160,20 @@ export default function EditProject({ showToast }) {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label htmlFor="githubUrl" className="block text-sm font-medium text-gray-700">
-                    GitHub Repository URL *
+                  <label htmlFor="repositoryUrl" className="block text-sm font-medium text-gray-700">
+                    Repository URL
                   </label>
                   <input
                     type="url"
-                    id="githubUrl"
-                    name="githubUrl"
-                    required
+                    id="repositoryUrl"
+                    name="repositoryUrl"
                     className="form-input mt-1"
-                    placeholder="https://github.com/username/repository"
-                    value={formData.githubUrl}
+                    placeholder="https://github.com/username/repository (optional for non-tech projects)"
+                    value={formData.repositoryUrl}
                     onChange={handleChange}
                   />
                   <p className="mt-1 text-sm text-gray-500">
-                    Make sure your repository is public for verification
+                    Optional: Add repository link if applicable
                   </p>
                 </div>
 
@@ -234,23 +233,24 @@ export default function EditProject({ showToast }) {
                   onChange={handleChange}
                 />
                 <p className="mt-1 text-sm text-gray-500">
-                  This is important for verification - share your genuine learning experience
+                  Share your genuine learning experience and what you gained from this project
                 </p>
               </div>
 
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                 <div className="flex">
-                  <svg className="w-5 h-5 text-blue-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  <svg className="w-5 h-5 text-green-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   <div className="ml-3">
-                    <h3 className="text-sm font-medium text-blue-800">Verification Requirements</h3>
-                    <div className="mt-2 text-sm text-blue-700">
+                    <h3 className="text-sm font-medium text-green-800">Project Guidelines</h3>
+                    <div className="mt-2 text-sm text-green-700">
                       <ul className="list-disc list-inside space-y-1">
-                        <li>GitHub repository must be public and contain meaningful code</li>
-                        <li>Repository should have a proper README file</li>
-                        <li>Code should demonstrate the technologies you've listed</li>
-                        <li>Learning description should be authentic and detailed</li>
+                        <li>Share your authentic project experience</li>
+                        <li>Include meaningful repository links if available</li>
+                        <li>List technologies that were actually used</li>
+                        <li>Describe what you learned and challenges faced</li>
+                        <li>No verification required - your work speaks for itself!</li>
                       </ul>
                     </div>
                   </div>

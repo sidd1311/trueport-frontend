@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import ProtectedRoute from '../components/ProtectedRoute';
 import EducationCard from '../components/EducationCard';
-import GitHubProjectCard from '../components/GitHubProjectCard';
+import ProjectCard from '../components/ProjectCard';
 import api from '../utils/api';
 import userAPI from '../utils/userAPI';
 
@@ -93,9 +93,11 @@ export default function Profile({ showToast }) {
 
   const fetchProjects = async () => {
     try {
-      const response = await api.get('/github-projects?limit=3');
+      const response = await api.get('/projects?limit=3');
       const projectsData = Array.isArray(response.data?.projects) 
         ? response.data.projects 
+        : Array.isArray(response.data?.githubProjects) 
+        ? response.data.githubProjects 
         : Array.isArray(response.data) 
         ? response.data 
         : [];
@@ -155,18 +157,22 @@ const fetchContactInfo = async () => {
   try {
     const res = await userAPI.getContactInfo(); // returns response.data from axios
     // backend returns: { contactInfo: { email, phone, linkedinUrl, githubUsername }, contactVisibility: { email, phone, linkedinUrl, githubUsername } }
-    const data = res?.contactInfo ? res : (res?.data ? res.data : res); // defensive
+    const data = res?.contactInfo ? res : (res?.data ? res.data : res);
+    console.log(data);
+    
     const ci = data.contactInfo || {};
-    console.log(ci)
-    const vis = data.contactVisibility || {};
+    console.log('Contact Info from DB:', ci);
+    const vis = data.visibility || {};
+    console.log('Contact Visibility from DB:', vis);
 
     setContactInfo({
       phone: ci.phone || '',
       linkedinUrl: ci.linkedinUrl || '',
-      emailVisible: vis.email !== undefined ? vis.email : true,
-      phoneVisible: vis.phone !== undefined ? vis.phone : false,
-      linkedinVisible: vis.linkedinUrl !== undefined ? vis.linkedinUrl : true,
-      githubVisible: vis.githubUsername !== undefined ? vis.githubUsername : true
+      // Use actual database values, only fall back to defaults if truly undefined/null
+      emailVisible: vis.email ?? true,
+      phoneVisible: vis.phone ?? false,
+      linkedinVisible: vis.linkedinUrl ?? true,
+      githubVisible: vis.githubUsername ?? true
     });
   } catch (err) {
     console.error('Failed to fetch contact info:', err);
@@ -337,7 +343,7 @@ const fetchContactInfo = async () => {
     if (!confirm('Are you sure you want to delete this project?')) return;
 
     try {
-      await api.delete(`/github-projects/${projectId}`);
+      await api.delete(`/projects/${projectId}`);
       showToast('Project deleted successfully', 'success');
       fetchProjects();
     } catch (error) {
@@ -346,16 +352,7 @@ const fetchContactInfo = async () => {
     }
   };
 
-  const handleRequestProjectVerification = async (projectId) => {
-    try {
-      await api.post(`/github-projects/${projectId}/request-verification`);
-      showToast('Verification requested successfully', 'success');
-      fetchProjects();
-    } catch (error) {
-      console.error('Failed to request verification:', error);
-      showToast(error.response?.data?.message || 'Failed to request verification', 'error');
-    }
-  };
+
 
   // Password change functions
   const handlePasswordChange = (e) => {
@@ -1188,7 +1185,7 @@ const fetchContactInfo = async () => {
                         <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                         </svg>
-                        GitHub Projects ({portfolioItems?.projects?.length || 0})
+                        Projects ({portfolioItems?.projects?.length || 0})
                       </h3>
                       <div className="space-y-4">
                         {(portfolioItems?.projects || []).map((project) => (
@@ -1197,43 +1194,32 @@ const fetchContactInfo = async () => {
                               <h4 className="font-medium text-gray-900">{project.projectName || project.name}</h4>
                               <p className="text-sm text-gray-600">{project.description}</p>
                               <div className="flex items-center mt-1">
-                                {project.verified ? (
-                                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
-                                    <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                    </svg>
-                                    Verified
-                                  </span>
-                                ) : (
-                                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-800">
-                                    Pending Verification
-                                  </span>
-                                )}
+                                <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs ${
+                                  project.isPublic !== false ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
+                                }`}>
+                                  {project.isPublic !== false ? 'Public' : 'Private'}
+                                </span>
                               </div>
                             </div>
                             <div className="ml-4">
-                              {project.verified ? (
-                                <label className="flex items-center cursor-pointer">
-                                  <input
-                                    type="checkbox"
-                                    checked={project.isPublic || false}
-                                    onChange={() => handleVisibilityToggle('project', project.id || project._id, project.isPublic || false)}
-                                    className="sr-only"
-                                  />
-                                  <div className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                                    project.isPublic ? 'bg-primary-600' : 'bg-gray-200'
-                                  }`}>
-                                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                                      project.isPublic ? 'translate-x-6' : 'translate-x-1'
-                                    }`} />
-                                  </div>
-                                  <span className="ml-2 text-sm text-gray-700">
-                                    {project.isPublic ? 'Visible' : 'Hidden'}
-                                  </span>
-                                </label>
-                              ) : (
-                                <span className="text-sm text-gray-400">Only verified items can be shown</span>
-                              )}
+                              <label className="flex items-center cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={project.isPublic !== false}
+                                  onChange={() => handleVisibilityToggle('project', project.id || project._id, project.isPublic !== false)}
+                                  className="sr-only"
+                                />
+                                <div className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                                  project.isPublic !== false ? 'bg-primary-600' : 'bg-gray-200'
+                                }`}>
+                                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                                    project.isPublic !== false ? 'translate-x-6' : 'translate-x-1'
+                                  }`} />
+                                </div>
+                                <span className="ml-2 text-sm text-gray-700">
+                                  {project.isPublic !== false ? 'Visible' : 'Hidden'}
+                                </span>
+                              </label>
                             </div>
                           </div>
                         ))}
@@ -1249,7 +1235,7 @@ const fetchContactInfo = async () => {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                       </svg>
                       <h3 className="mt-4 text-lg font-medium text-gray-900">No items to display</h3>
-                      <p className="mt-2 text-gray-600">Add some experiences, education, or projects first, then get them verified to control their visibility.</p>
+                      <p className="mt-2 text-gray-600">Add some experiences, education, or projects first. Experiences and education require verification to be visible, while projects can be controlled directly.</p>
                       <div className="mt-6 flex justify-center space-x-4">
                         <Link href="/experiences/new" className="btn-primary">Add Experience</Link>
                         <Link href="/education/new" className="btn-secondary">Add Education</Link>

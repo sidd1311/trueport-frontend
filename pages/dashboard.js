@@ -4,7 +4,7 @@ import Link from 'next/link';
 import ProtectedRoute from '../components/ProtectedRoute';
 import ExperienceCard from '../components/ExperienceCard';
 import EducationCard from '../components/EducationCard';
-import GitHubProjectCard from '../components/GitHubProjectCard';
+import ProjectCard from '../components/ProjectCard';
 import api from '../utils/api';
 
 export default function Dashboard({ showToast }) {
@@ -16,7 +16,7 @@ export default function Dashboard({ showToast }) {
   const [stats, setStats] = useState({
     experiences: { total: 0, verified: 0, pending: 0 },
     education: { total: 0, verified: 0, pending: 0 },
-    projects: { total: 0, verified: 0, pending: 0 },
+    projects: { total: 0, public: 0, private: 0 },
   });
 
   useEffect(() => {
@@ -37,7 +37,7 @@ export default function Dashboard({ showToast }) {
         api.get('/users/me'),
         api.get('/experiences?limit=4'),
         api.get('/education?limit=3'),
-        api.get('/github-projects?limit=3'),
+        api.get('/projects?limit=3'),
       ]);
 
       const userData = userResponse.data?.user || userResponse.data || {};
@@ -55,7 +55,9 @@ export default function Dashboard({ showToast }) {
         ? educationResponse.data
         : [];
 
-      const projectsData = Array.isArray(projectsResponse.data?.githubProjects)
+      const projectsData = Array.isArray(projectsResponse.data?.projects)
+        ? projectsResponse.data.projects
+        : Array.isArray(projectsResponse.data?.githubProjects)
         ? projectsResponse.data.githubProjects
         : Array.isArray(projectsResponse.data)
         ? projectsResponse.data
@@ -71,10 +73,16 @@ export default function Dashboard({ showToast }) {
         pending: arr.filter((i) => !i?.verified).length,
       });
 
+      const calcProjects = (arr) => ({
+        total: arr.length,
+        public: arr.filter((i) => i?.isPublic !== false).length,
+        private: arr.filter((i) => i?.isPublic === false).length,
+      });
+
       setStats({
         experiences: calc(experiencesData),
         education: calc(educationData),
-        projects: calc(projectsData),
+        projects: calcProjects(projectsData),
       });
     } catch (err) {
       console.error('Failed to fetch dashboard data:', err);
@@ -227,7 +235,7 @@ export default function Dashboard({ showToast }) {
               <div className="space-y-4">
                 {projects.length > 0 ? (
                   projects.slice(0, 3).map((p) => (
-                    <GitHubProjectCard key={p.id || p._id} project={p} showActions={false} />
+                    <ProjectCard key={p.id || p._id} project={p} showActions={false} />
                   ))
                 ) : (
                   <div className="py-8 text-center text-gray-500 bg-white rounded-lg border border-gray-100">No projects yet. <Link href="/projects/new" className="text-indigo-600">Add one</Link></div>
